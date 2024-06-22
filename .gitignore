@@ -20,3 +20,6 @@
 # Go workspace file
 go.work
 go.work.sum
+
+# ignore environment variables directory
+.env
