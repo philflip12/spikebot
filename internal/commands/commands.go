@@ -9,58 +9,81 @@ import (
 
 // onMessageCreate is called every time a message is created on any channel the bot has access to.
 // It is added as a callback by 'AddHandler'
-func OnMessageCreate(s *dg.Session, m *dg.MessageCreate) {
-	// Ignore messages created by the bot
-	if m.Author.ID == s.State.User.ID {
-		return
+func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
+	switch i.ApplicationCommandData().Name {
+	case "help":
+		cmdHelp(s, i)
+	case "generate":
+		cmdGenerate(s, i)
+	case "role":
+		cmdRole(s, i)
 	}
+}
 
-	switch m.Content {
-	case "@spike help":
-		cmdHelp(s, m)
-	case "@spike generate":
-		cmdGenerate(s, m)
-	case "@spike role":
-		cmdRole(s, m)
-	}
+// func OnInteractionEvent(s *dg.Session, m *dg.InteractionCreate)
+
+var CommandList = []*dg.ApplicationCommand{
+	{
+		Name:        "help",
+		Description: "Print all spike commands",
+	},
+	{
+		Name:        "generate",
+		Description: "Not Yet Implemented",
+	},
+	{
+		Name:        "role",
+		Description: "Not Yet Implemented",
+	},
 }
 
 const helpMessage = "" +
 	"Spike Command Options:\n" +
-	"\t@spike help\n" +
-	"\t@spike generate\n" +
-	"\t@spike role"
+	"\t/help\n" +
+	"\t/generate\n" +
+	"\t/role"
 
-func cmdHelp(s *dg.Session, m *dg.MessageCreate) {
+func cmdHelp(s *dg.Session, i *dg.InteractionCreate) {
 	log.Info("Executing 'Help'")
-	_, err := s.ChannelMessageSend(m.ChannelID, helpMessage)
-	if err != nil {
-		log.Errorf("'Generate' failed: %v", err)
+	if err := s.InteractionRespond(i.Interaction, &dg.InteractionResponse{
+		Type: dg.InteractionResponseChannelMessageWithSource,
+		Data: &dg.InteractionResponseData{
+			Content: helpMessage,
+		},
+	}); err != nil {
+		log.Errorf("'Help' failed: %v", err)
+		return
 	}
 	log.Info("'Help' Complete")
 }
 
-func cmdGenerate(s *dg.Session, m *dg.MessageCreate) {
+func cmdGenerate(s *dg.Session, i *dg.InteractionCreate) {
 	log.Info("Executing 'Generate'")
-	_, err := s.ChannelMessageSend(m.ChannelID, "Generated!")
-	if err != nil {
+	if err := s.InteractionRespond(i.Interaction, &dg.InteractionResponse{
+		Type: dg.InteractionResponseChannelMessageWithSource,
+		Data: &dg.InteractionResponseData{
+			Content: "Generated!",
+		},
+	}); err != nil {
 		log.Errorf("'Generate' failed: %v", err)
+		return
 	}
 	log.Info("'Generate' Complete")
 }
 
-func cmdRole(s *dg.Session, m *dg.MessageCreate) {
+func cmdRole(s *dg.Session, i *dg.InteractionCreate) {
 	log.Info("Executing 'Role'")
 	var err error
 	defer func() {
 		if err != nil {
 			log.Errorf("'Role' failed: %v", err)
+		} else {
+			log.Info("'Role' complete")
 		}
-		log.Info("'Role' complete")
 	}()
 
 	var roles []*dg.Role
-	if roles, err = s.GuildRoles(m.GuildID); err != nil {
+	if roles, err = s.GuildRoles(i.GuildID); err != nil {
 		return
 	}
 
@@ -69,7 +92,10 @@ func cmdRole(s *dg.Session, m *dg.MessageCreate) {
 		str += fmt.Sprintf("\n\tName: %s, ID: %s, Is Managed: %v, Is Mentionable: %v, Position: %v", role.Name, role.ID, role.Managed, role.Mentionable, role.Position)
 	}
 
-	if _, err = s.ChannelMessageSend(m.ChannelID, str); err != nil {
-		return
-	}
+	err = s.InteractionRespond(i.Interaction, &dg.InteractionResponse{
+		Type: dg.InteractionResponseChannelMessageWithSource,
+		Data: &dg.InteractionResponseData{
+			Content: str,
+		},
+	})
 }
