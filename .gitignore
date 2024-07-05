@@ -23,3 +23,6 @@ go.work.sum
 
 # ignore environment variables directory
 .env
+
+# ignore persistent data directory
+persistentData

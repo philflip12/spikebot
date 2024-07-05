@@ -166,11 +166,14 @@ func startSpikeSession(botToken string, guildID string) *spikeSession {
 
 func (s *spikeSession) registerCommmands(cmds []*dg.ApplicationCommand) {
 	for _, cmd := range cmds {
-		if _, ok := s.registeredCommands[cmd.ID]; ok {
+		if _, ok := s.registeredCommands[cmd.Name]; ok {
 			continue
 		}
-		regCmd, _ := s.ApplicationCommandCreate(s.State.User.ID, s.guildID, cmd)
-		s.registeredCommands[regCmd.ID] = regCmd
+		regCmd, err := s.ApplicationCommandCreate(s.State.User.ID, s.guildID, cmd)
+		if err != nil {
+			panic(err)
+		}
+		s.registeredCommands[regCmd.Name] = regCmd
 	}
 }
 
