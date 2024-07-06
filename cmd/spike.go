@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"io"
 	"os"
@@ -13,29 +15,32 @@ import (
 )
 
 const (
-	logTimeStampFmt     = "06-01-02 3:04:05 pm" // YY-MM-DD HH:MM:SS pm
-	defaultBotTokenPath = "./.env/BotToken"
-	defaultGuildIDPath  = "./.env/ServerID"
-	defaultLogLevelStr  = "info"
-	usageDialogFmtStr   = `
+	logTimeStampFmt       = "06-01-02 3:04:05 pm" // YY-MM-DD HH:MM:SS pm
+	defaultBotTokenPath   = "./.env/BotToken"
+	defaultServerIDsPath  = "./.env/ServerIDs"
+	defaultChannelIDsPath = "./.env/ChannelIDs"
+	defaultLogLevelStr    = "info"
+	usageDialogFmtStr     = `
     SpikeBot [Options...]
 
     Options:
-        -h               Print this help dialog
-        -l LOG_LEVEL     Set program to print logs of LOG_LEVEL and higher
-        -t TOKEN_PATH    Set the bot token file path to TOKEN_PATH
-        -s SERVER_PATH   Set the server id file path to SERVER_PATH
+        -h                Print this help dialog
+        -l LOG_LEVEL      Set program to print logs of LOG_LEVEL and higher
+        -t TOKEN_PATH     Set the bot token file path to TOKEN_PATH
+        -s SERVER_PATH    Set the server-id file path to SERVER_PATH
+        -c CHANNEL_PATH   Set the channel-id file path to CHANNEL_PATH
 
     Log Levels:
         [debug, info, warn, error, fatal]
 
-    Default Options: [SpikeBot -l "%s" -t "%s" -s "%s"]
+    Default Options: [SpikeBot -l "%s" -t "%s" -s "%s" -c "%s"]
 `
 )
 
 type programArgs struct {
-	botToken string
-	guildID  string
+	botToken   string
+	serverIDs  []string
+	channelIDs []string
 }
 
 func main() {
@@ -48,11 +53,18 @@ func main() {
 
 	args := parseFlags()
 
-	spike := startSpikeSession(args.botToken, args.guildID)
+	// Only accept commands from specified servers and channels
+	cmds.SetServerIDs(args.serverIDs)
+	cmds.SetChannelIDs(args.channelIDs)
+
+	// Start spike and set the servers it will respond to commands from
+	spike := startSpikeSession(args.botToken, args.serverIDs)
 	defer spike.Close()
 
+	// Register commands for the servers previously specified
 	spike.registerCommmands(cmds.CommandList)
-	defer spike.deregisterAllCommands()
+	// Remove all registered commands from the servers when spike stops running.
+	defer spike.deregisterCommands()
 
 	log.Info("Spike is now running. Press CTRL-C to exit")
 
@@ -66,19 +78,21 @@ func parseFlags() *programArgs {
 	var printHelp bool
 	var logLevelStr string
 	var botTokenPath string
-	var guildIDPath string
+	var serverIDPath string
+	var channelIDPath string
 	flag.BoolVar(&printHelp, "h", false, "")
 	flag.StringVar(&botTokenPath, "t", defaultBotTokenPath, "h")
-	flag.StringVar(&guildIDPath, "g", defaultGuildIDPath, "")
+	flag.StringVar(&serverIDPath, "s", defaultServerIDsPath, "")
+	flag.StringVar(&channelIDPath, "c", defaultChannelIDsPath, "")
 	flag.StringVar(&logLevelStr, "l", defaultLogLevelStr, "")
 	flag.Usage = func() {
-		log.Fatalf(usageDialogFmtStr, defaultLogLevelStr, defaultBotTokenPath, defaultGuildIDPath)
+		log.Fatalf(usageDialogFmtStr, defaultLogLevelStr, defaultBotTokenPath, defaultServerIDsPath, defaultChannelIDsPath)
 	}
 	flag.Parse()
 
 	if printHelp {
 		if printHelp {
-			log.Infof(usageDialogFmtStr, defaultLogLevelStr, defaultBotTokenPath, defaultGuildIDPath)
+			log.Infof(usageDialogFmtStr, defaultLogLevelStr, defaultBotTokenPath, defaultServerIDsPath, defaultChannelIDsPath)
 		}
 		os.Exit(0)
 	}
@@ -96,19 +110,44 @@ func parseFlags() *programArgs {
 		log.Fatalf("Failed to read from bot token file path '%s'", botTokenPath)
 	}
 
-	// Open and read guild ID from provided file path or default path
-	guildIDFile, err := os.Open(guildIDPath)
+	// Open and read server ID from provided file path or default path
+	serverIDFile, err := os.Open(serverIDPath)
 	if err != nil {
-		log.Fatalf("Failed to open server ID file path '%s'", guildIDPath)
+		log.Fatalf("Failed to open server ID file path '%s'", serverIDPath)
 	}
-	guildID, err := io.ReadAll(guildIDFile)
+	serverIDData, err := io.ReadAll(serverIDFile)
 	if err != nil {
-		log.Fatalf("Failed to read from server ID file path '%s'", guildIDPath)
+		log.Fatalf("Failed to read from server ID file path '%s'", serverIDPath)
+	}
+	serverReader := bytes.NewBuffer(serverIDData)
+	serverScanner := bufio.NewScanner(serverReader)
+	serverScanner.Split(bufio.ScanLines)
+	serverIDs := []string{}
+	for serverScanner.Scan() {
+		serverIDs = append(serverIDs, serverScanner.Text())
+	}
+
+	// Open and read channel ID from provided file path or default path
+	channelIDFile, err := os.Open(channelIDPath)
+	if err != nil {
+		log.Fatalf("Failed to open channel ID file path '%s'", channelIDPath)
+	}
+	channelIDData, err := io.ReadAll(channelIDFile)
+	if err != nil {
+		log.Fatalf("Failed to read from channel ID file path '%s'", channelIDPath)
+	}
+	channelReader := bytes.NewBuffer(channelIDData)
+	channelScanner := bufio.NewScanner(channelReader)
+	channelScanner.Split(bufio.ScanLines)
+	channelIDs := []string{}
+	for channelScanner.Scan() {
+		channelIDs = append(channelIDs, channelScanner.Text())
 	}
 
 	return &programArgs{
-		botToken: string(botToken),
-		guildID:  string(guildID),
+		botToken:   string(botToken),
+		serverIDs:  serverIDs,
+		channelIDs: channelIDs,
 	}
 }
 
@@ -133,19 +172,18 @@ func setLogLevel(levelStr string) {
 
 type spikeSession struct {
 	*dg.Session
-	guildID            string
-	registeredCommands map[string]*dg.ApplicationCommand
+	serverIDs []string
 }
 
 // Connects to the discord server and starts spike using the specified botToken
-func startSpikeSession(botToken string, guildID string) *spikeSession {
+func startSpikeSession(botToken string, serverIDs []string) *spikeSession {
 	// Create a new Discord session using the provided bot token.
 	session, err := dg.New("Bot " + botToken)
 	if err != nil {
 		log.Fatalf("Error creating Discord session: %v", err)
 	}
 
-	// Set the bot permission requirements
+	// Set the bot permission requirements ("guild" is the develement equivalent of "server")
 	session.Identify.Intents = dg.IntentGuildMessages | dg.IntentGuilds
 
 	session.AddHandler(cmds.OnInteractionCreate)
@@ -157,31 +195,22 @@ func startSpikeSession(botToken string, guildID string) *spikeSession {
 	}
 
 	return &spikeSession{
-		Session:            session,
-		guildID:            guildID,
-		registeredCommands: make(map[string]*dg.ApplicationCommand),
+		Session:   session,
+		serverIDs: serverIDs,
 	}
 
 }
 
 func (s *spikeSession) registerCommmands(cmds []*dg.ApplicationCommand) {
-	for _, cmd := range cmds {
-		if _, ok := s.registeredCommands[cmd.Name]; ok {
-			continue
-		}
-		regCmd, err := s.ApplicationCommandCreate(s.State.User.ID, s.guildID, cmd)
-		if err != nil {
-			panic(err)
-		}
-		s.registeredCommands[regCmd.Name] = regCmd
+	for _, serverID := range s.serverIDs {
+		s.ApplicationCommandBulkOverwrite(s.State.User.ID, serverID, cmds)
 	}
 }
 
-func (s *spikeSession) deregisterAllCommands() {
-	for cmdID := range s.registeredCommands {
-		s.ApplicationCommandDelete(s.State.User.ID, s.guildID, cmdID)
+func (s *spikeSession) deregisterCommands() {
+	for _, serverID := range s.serverIDs {
+		s.ApplicationCommandBulkOverwrite(s.State.User.ID, serverID, nil)
 	}
-	s.registeredCommands = make(map[string]*dg.ApplicationCommand)
 }
 
 // blocks until a kill signal is sent to the program such as "CTRL-C"

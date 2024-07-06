@@ -1,22 +1,29 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
+	"sort"
+	"strings"
 	"time"
 
 	dg "github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
 )
 
-const maxTeamDiffAllowed = float64(20)
+// the default largest allowable skill gap between the strongest and weakest created teams.
+const defaultTeamsMaxSkillGap = float64(20)
+const teamGenTimeLimit = 100 * time.Millisecond
 
 func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options
 	numTeams := int(options[0].IntValue())
+	maxSkillGap := defaultTeamsMaxSkillGap
+	if len(options) > 1 {
+		maxSkillGap = float64(options[1].IntValue())
+	}
 
-	players, err := getPlaying()
+	players, err := getPlaying(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
@@ -44,9 +51,25 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
+	teams := createTeams(players, numTeams, maxSkillGap, teamGenTimeLimit)
+
+	if teams.skillGap <= maxSkillGap {
+		str := fmt.Sprintf("Teams found:%s", teams.String())
+		interactionRespond(session, interaction, str)
+	} else {
+		str := fmt.Sprintf("No valid team. Best option:%s", teams.String())
+		interactionRespond(session, interaction, str)
+	}
+}
+
+func createTeams(
+	players []Player,
+	numTeams int,
+	maxSkillGap float64,
+	timeLimit time.Duration,
+) Teams {
 	// put an upper time limit on shuffling for good teams
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
+	deadline := time.Now().Add(timeLimit)
 
 	// loop variables
 	bestArrangementDiff := float64(100)
@@ -96,30 +119,63 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 			copy(bestArrangement, arrangement)
 			copy(bestAverages, averages)
 		}
-		if averageDiff <= maxTeamDiffAllowed {
+		if averageDiff <= maxSkillGap {
 			break
 		}
-		if ctx.Err() != nil {
+		if time.Until(deadline) < 0 {
 			break
-		}
-	}
-	playerIndex := 0
-	teamsStr := ""
-	for teamIdx := 0; teamIdx < numTeams; teamIdx++ {
-		averageSkill := bestAverages[teamIdx]
-		teamsStr = fmt.Sprintf("%s\nTeam %d: %v", teamsStr, teamIdx+1, averageSkill)
-		for teammateIdx := 0; teammateIdx < teamSizes[teamIdx]; teammateIdx++ {
-			player := players[bestArrangement[playerIndex]]
-			playerIndex++
-			teamsStr = fmt.Sprintf("%s\n\t%s: %d", teamsStr, player.Name, player.Skill)
 		}
 	}
 
-	if bestArrangementDiff <= maxTeamDiffAllowed {
-		str := fmt.Sprintf("Teams found:%s", teamsStr)
-		interactionRespond(session, interaction, str)
-	} else {
-		str := fmt.Sprintf("No valid team. Best option:%s", teamsStr)
-		interactionRespond(session, interaction, str)
+	playerIdx := 0
+	teams := Teams{
+		skillGap: bestArrangementDiff,
+		teams:    make([]*Team, numTeams),
 	}
+	for teamIdx := 0; teamIdx < numTeams; teamIdx++ {
+		team := &Team{}
+		team.skill = bestAverages[teamIdx]
+		team.players = make([]*Player, teamSizes[teamIdx])
+		for teammateIdx := 0; teammateIdx < teamSizes[teamIdx]; teammateIdx++ {
+			team.players[teammateIdx] = &players[bestArrangement[playerIdx]]
+			playerIdx++
+		}
+		teams.teams[teamIdx] = team
+	}
+	sort.Slice(teams.teams, func(i, j int) bool {
+		return teams.teams[i].skill > teams.teams[j].skill
+	})
+
+	return teams
+}
+
+type Team struct {
+	skill   float64
+	players []*Player
+}
+
+type Teams struct {
+	skillGap float64
+	teams    []*Team
+}
+
+func (teams *Teams) String() string {
+	longestName := 0
+	for _, team := range teams.teams {
+		for _, teammate := range team.players {
+			if len(teammate.Name) > longestName {
+				longestName = len(teammate.Name)
+			}
+		}
+	}
+
+	teamsStr := "```"
+	for teamIdx, team := range teams.teams {
+		teamsStr = fmt.Sprintf("%s\nTeam %d %s %v", teamsStr, teamIdx+1, strings.Repeat(".", longestName+1), team.skill)
+		for _, teammate := range team.players {
+			teamsStr = fmt.Sprintf("%s\n\t%s%s  %d", teamsStr, teammate.Name, strings.Repeat(" ", longestName-len(teammate.Name)), teammate.Skill)
+		}
+	}
+	teamsStr = fmt.Sprintf("%s\n```", teamsStr)
+	return teamsStr
 }

@@ -6,6 +6,7 @@ package commands
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 )
@@ -17,23 +18,38 @@ type LoadSaver interface {
 	Save() error
 }
 
-const persistentDataDirectory = "persistentData/"
+const persistentDataDirectory = "persistentData"
 const playerDataFileName = "playerData"
 const playingListFileName = "playingList"
 
-var players persistentObject[map[string]Player]
-var playing persistentObject[map[string]struct{}]
+// map[serverID]persistentObject[map[userID]Player]
+var players map[string]*persistentObject[map[string]Player]
 
-func init() {
-	players.fileName = playerDataFileName
-	players.makeNew = func() map[string]Player { return map[string]Player{} }
-	playing.fileName = playingListFileName
-	playing.makeNew = func() map[string]struct{} { return map[string]struct{}{} }
+// map[serverID]persistentObject[map[userID]exists]
+var playing map[string]*persistentObject[map[string]struct{}]
+
+// initializes the players and playing persistentObject variables for each server being serviced
+func SetServerIDs(serverIDs []string) {
+	players = make(map[string]*persistentObject[map[string]Player], len(serverIDs))
+	playing = make(map[string]*persistentObject[map[string]struct{}], len(serverIDs))
+	for _, serverID := range serverIDs {
+		players[serverID] = &persistentObject[map[string]Player]{
+			filePath: fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
+			fileName: playerDataFileName,
+			makeNew:  func() map[string]Player { return map[string]Player{} },
+		}
+		playing[serverID] = &persistentObject[map[string]struct{}]{
+			filePath: fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
+			fileName: playingListFileName,
+			makeNew:  func() map[string]struct{} { return map[string]struct{}{} },
+		}
+	}
 }
 
 type persistentObject[T any] struct {
 	Mutex    sync.Mutex
 	isLoaded bool
+	filePath string
 	fileName string
 	object   T
 	makeNew  func() T
@@ -52,19 +68,19 @@ func (p *persistentObject[T]) Load() error {
 		return nil
 	}
 
-	if _, err := os.Stat(persistentDataDirectory); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(p.filePath); errors.Is(err, os.ErrNotExist) {
 		p.object = p.makeNew()
 		p.isLoaded = true
 		return nil
 	}
 
-	if _, err := os.Stat(persistentDataDirectory + p.fileName + ".json"); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s.json", p.filePath, p.fileName)); errors.Is(err, os.ErrNotExist) {
 		p.object = p.makeNew()
 		p.isLoaded = true
 		return nil
 	}
 
-	data, err := os.ReadFile(persistentDataDirectory + p.fileName + ".json")
+	data, err := os.ReadFile(fmt.Sprintf("%s/%s.json", p.filePath, p.fileName))
 	if err != nil {
 		return err
 	}
@@ -85,17 +101,17 @@ func (p *persistentObject[T]) Save() error {
 		return err
 	}
 
-	if _, err := os.Stat(persistentDataDirectory); errors.Is(err, os.ErrNotExist) {
-		if err := os.MkdirAll(persistentDataDirectory, os.ModePerm); err != nil {
+	if _, err := os.Stat(p.filePath); errors.Is(err, os.ErrNotExist) {
+		if err := os.MkdirAll(p.filePath, os.ModePerm); err != nil {
 			return err
 		}
 	}
 
-	if err := os.WriteFile(persistentDataDirectory+p.fileName+"_temp.json", data, os.ModePerm); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/%s_temp.json", p.filePath, p.fileName), data, os.ModePerm); err != nil {
 		return err
 	}
 
-	return os.Rename(persistentDataDirectory+p.fileName+"_temp.json", persistentDataDirectory+p.fileName+".json")
+	return os.Rename(fmt.Sprintf("%s/%s_temp.json", p.filePath, p.fileName), fmt.Sprintf("%s/%s.json", p.filePath, p.fileName))
 }
 
 type Player struct {
@@ -103,124 +119,124 @@ type Player struct {
 	Skill int    `json:"skill"`
 }
 
-func loadUserName(userID string) (string, bool, error) {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func loadUserName(serverID string, userID string) (string, bool, error) {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return "", false, err
 	}
 
-	player, ok := players.object[userID]
+	player, ok := players[serverID].object[userID]
 	if !ok {
 		return "", false, nil
 	}
 	return player.Name, true, nil
 }
 
-func saveUserName(userID string, name string) error {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func saveUserName(serverID string, userID string, name string) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return err
 	}
 
-	if _, ok := players.object[userID]; ok {
+	if _, ok := players[serverID].object[userID]; ok {
 		return nil
 	}
-	players.object[userID] = Player{
+	players[serverID].object[userID] = Player{
 		Name:  name,
 		Skill: -1,
 	}
-	return players.Save()
+	return players[serverID].Save()
 }
 
-func addPlayingUser(userID string) error {
-	playing.Lock()
-	defer playing.Unlock()
-	if err := playing.Load(); err != nil {
+func addPlayingUser(serverID string, userID string) error {
+	playing[serverID].Lock()
+	defer playing[serverID].Unlock()
+	if err := playing[serverID].Load(); err != nil {
 		return err
 	}
 
-	if _, ok := playing.object[userID]; !ok {
-		playing.object[userID] = struct{}{}
-		return playing.Save()
+	if _, ok := playing[serverID].object[userID]; !ok {
+		playing[serverID].object[userID] = struct{}{}
+		return playing[serverID].Save()
 	}
 	return nil
 }
 
-func delPlayingUser(userID string) error {
-	playing.Lock()
-	defer playing.Unlock()
-	if err := playing.Load(); err != nil {
+func delPlayingUser(serverID string, userID string) error {
+	playing[serverID].Lock()
+	defer playing[serverID].Unlock()
+	if err := playing[serverID].Load(); err != nil {
 		return err
 	}
 
-	if _, ok := playing.object[userID]; ok {
-		delete(playing.object, userID)
-		return playing.Save()
+	if _, ok := playing[serverID].object[userID]; ok {
+		delete(playing[serverID].object, userID)
+		return playing[serverID].Save()
 	}
 	return nil
 }
 
-func clearPlayingUsers() error {
-	playing.Lock()
-	defer playing.Unlock()
+func clearPlayingUsers(serverID string) error {
+	playing[serverID].Lock()
+	defer playing[serverID].Unlock()
 
-	playing.object = map[string]struct{}{}
-	return playing.Save()
+	playing[serverID].object = map[string]struct{}{}
+	return playing[serverID].Save()
 }
 
-func getPlaying() ([]Player, error) {
-	playing.Lock()
-	if err := playing.Load(); err != nil {
+func getPlaying(serverID string) ([]Player, error) {
+	playing[serverID].Lock()
+	if err := playing[serverID].Load(); err != nil {
 		return nil, err
 	}
 
-	userIDs := make([]string, 0, len(playing.object))
-	for key := range playing.object {
+	userIDs := make([]string, 0, len(playing[serverID].object))
+	for key := range playing[serverID].object {
 		userIDs = append(userIDs, key)
 	}
-	playing.Unlock()
+	playing[serverID].Unlock()
 
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return nil, err
 	}
 
 	result := make([]Player, 0, len(userIDs))
 	for _, userID := range userIDs {
-		result = append(result, players.object[userID])
+		result = append(result, players[serverID].object[userID])
 	}
 
 	return result, nil
 }
 
-func setPlayerRank(userID string, rank int) error {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func setPlayerRank(serverID string, userID string, rank int) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return err
 	}
 
-	player, ok := players.object[userID]
+	player, ok := players[serverID].object[userID]
 	if !ok {
 		return nil
 	}
 
 	player.Skill = rank
-	players.object[userID] = player
-	return players.Save()
+	players[serverID].object[userID] = player
+	return players[serverID].Save()
 }
 
-func modifyPlayerRank(userID string, diff int) (prev, new int, err error) {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func modifyPlayerRank(serverID string, userID string, diff int) (prev, new int, err error) {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return 0, 0, err
 	}
 
-	if player, ok := players.object[userID]; ok {
+	if player, ok := players[serverID].object[userID]; ok {
 		prev = player.Skill
 		player.Skill += diff
 		if player.Skill > 100 {
@@ -229,32 +245,51 @@ func modifyPlayerRank(userID string, diff int) (prev, new int, err error) {
 			player.Skill = 0
 		}
 		new = player.Skill
-		players.object[userID] = player
+		players[serverID].object[userID] = player
 	}
-	return prev, new, players.Save()
+	return prev, new, players[serverID].Save()
 }
 
-func getPlayer(userID string) (Player, bool, error) {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func getPlayer(serverID string, userID string) (Player, bool, error) {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return Player{}, false, err
 	}
 
-	player, ok := players.object[userID]
+	player, ok := players[serverID].object[userID]
 	return player, ok, nil
 }
 
-func getPlayers() ([]Player, error) {
-	players.Lock()
-	defer players.Unlock()
-	if err := players.Load(); err != nil {
+func getPlayers(serverID string) (map[string]Player, error) {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
 		return nil, err
 	}
 
-	allPlayers := make([]Player, 0, len(players.object))
-	for userID := range players.object {
-		allPlayers = append(allPlayers, players.object[userID])
+	playerMap := make(map[string]Player, len(players[serverID].object))
+	for userID, player := range players[serverID].object {
+		playerMap[userID] = player
 	}
-	return allPlayers, nil
+	return playerMap, nil
+}
+
+func updatePlayerNames(serverID string, nameMap map[string]string) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	for userID, name := range nameMap {
+		player, ok := players[serverID].object[userID]
+		if !ok {
+			continue
+		}
+		player.Name = name
+		players[serverID].object[userID] = player
+	}
+
+	return players[serverID].Save()
 }

@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ func setRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := setPlayerRank(userID, rank); err != nil {
+	if err := setPlayerRank(interaction.GuildID, userID, rank); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
@@ -62,7 +63,7 @@ func increaseRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	prevRank, newRank, err := modifyPlayerRank(userID, difference)
+	prevRank, newRank, err := modifyPlayerRank(interaction.GuildID, userID, difference)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
@@ -85,7 +86,7 @@ func decreaseRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	prevRank, newRank, err := modifyPlayerRank(userID, -difference)
+	prevRank, newRank, err := modifyPlayerRank(interaction.GuildID, userID, -difference)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
@@ -107,7 +108,7 @@ func showRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	player, _, err := getPlayer(userID)
+	player, _, err := getPlayer(interaction.GuildID, userID)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
@@ -118,17 +119,24 @@ func showRank(session *dg.Session, interaction *dg.InteractionCreate) {
 }
 
 func showRanks(session *dg.Session, interaction *dg.InteractionCreate) {
-	players, err := getPlayers()
+	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	str := "All Skill Ranks:"
+	longestName := 0
 	for _, player := range players {
-		str = fmt.Sprintf("%s\n  \"%s\": %d", str, player.Name, player.Skill)
+		if len(player.Name) > longestName {
+			longestName = len(player.Name)
+		}
 	}
+	str := "All Skill Ranks:\n```"
+	for _, player := range players {
+		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
+	}
+	str = fmt.Sprintf("%s\n```", str)
 
 	interactionRespond(session, interaction, str)
 }

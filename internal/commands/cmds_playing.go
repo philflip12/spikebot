@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
 	switch subCommandName {
 	case "add":
 		addToPlaying(session, interaction)
-	case "del":
+	case "remove":
 		delFromPlaying(session, interaction)
 	case "clear":
 		clearPlaying(session, interaction)
@@ -37,7 +38,7 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := addPlayingUser(userID); err != nil {
+	if err := addPlayingUser(interaction.GuildID, userID); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
@@ -58,7 +59,7 @@ func delFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := delPlayingUser(userID); err != nil {
+	if err := delPlayingUser(interaction.GuildID, userID); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
@@ -68,7 +69,7 @@ func delFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 }
 
 func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	if err := clearPlayingUsers(); err != nil {
+	if err := clearPlayingUsers(interaction.GuildID); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
@@ -78,17 +79,24 @@ func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 }
 
 func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	players, err := getPlaying()
+	players, err := getPlaying(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	str := "Playing group:"
+	longestName := 0
 	for _, player := range players {
-		str = fmt.Sprintf("%s\n  \"%s\": %d", str, player.Name, player.Skill)
+		if len(player.Name) > longestName {
+			longestName = len(player.Name)
+		}
 	}
+	str := "Playing group:\n```"
+	for _, player := range players {
+		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
+	}
+	str = fmt.Sprintf("%s\n```", str)
 
 	interactionRespond(session, interaction, str)
 }

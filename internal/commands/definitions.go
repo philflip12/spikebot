@@ -7,18 +7,38 @@ import (
 	dg "github.com/bwmarrin/discordgo"
 )
 
-// onMessageCreate is called every time a message is created on any channel the bot has access to.
-// It is added as a callback by 'AddHandler'
+var channelMap map[string]struct{}
+
+func init() {
+	channelMap = map[string]struct{}{}
+}
+
+// should not be called after adding handles which use the ChannelIDs map.
+func SetChannelIDs(channelIDs []string) {
+	for _, channelID := range channelIDs {
+		channelMap[channelID] = struct{}{}
+	}
+}
+
+// OnInteractionCreate is called every time an interaction is created on any server the bot has
+// registered commands to.
+// It is added as a callback by 'discordgo.Session.AddHandler'
 func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
+	if _, ok := channelMap[i.ChannelID]; !ok {
+		// Ignore commands sent from non-added channels
+		return
+	}
 	switch i.ApplicationCommandData().Name {
 	case "help":
 		cmdHelp(s, i)
-	case "play":
+	case "playing":
 		cmdPlay(s, i)
-	case "rank":
+	case "skill":
 		cmdRank(s, i)
 	case "last_active":
 		cmdLastActive(s, i)
+	case "update_names":
+		cmdUpdateNames(s, i)
 	case "teams":
 		cmdTeams(s, i)
 	}
@@ -32,7 +52,7 @@ var CommandList = []*dg.ApplicationCommand{
 		Description: "Print all spike commands",
 	},
 	{
-		Name:        "rank",
+		Name:        "skill",
 		Description: "Commands relating to players' skill ranks",
 		Options: []*dg.ApplicationCommandOption{
 			{
@@ -119,7 +139,7 @@ var CommandList = []*dg.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "play",
+		Name:        "playing",
 		Description: "Commads relating to the list of active players",
 		Options: []*dg.ApplicationCommandOption{
 			{
@@ -136,7 +156,7 @@ var CommandList = []*dg.ApplicationCommand{
 				},
 			},
 			{
-				Name:        "del",
+				Name:        "remove",
 				Description: "Remove a player from the list of active players",
 				Type:        dg.ApplicationCommandOptionSubCommand,
 				Options: []*dg.ApplicationCommandOption{
@@ -181,27 +201,40 @@ var CommandList = []*dg.ApplicationCommand{
 				Description: "Number of teams to create",
 				Type:        dg.ApplicationCommandOptionInteger,
 				Required:    true,
-				MinValue:    ptr(float64(1)),
+				MinValue:    ptr(float64(2)),
+			},
+			{
+				Name:        "max_skill_gap",
+				Description: "The largest allowable skill gap between the strongest and weakest created teams, defaults to 20",
+				Type:        dg.ApplicationCommandOptionInteger,
+				Required:    false,
 			},
 		},
 	},
+	{
+		Name:        "update_names",
+		Description: "Update Spike database with players names",
+	},
 }
 
-const helpMessage = "" +
-	"Spike Command Options:\n" +
-	"\t/help\n" +
-	"\t/play\n" +
-	"\t\tadd\n" +
-	"\t\tdel\n" +
-	"\t\tclear\n" +
-	"\t\tshow\n" +
-	"\t/rank\n" +
-	"\t\tset\n" +
-	"\t\tadd\n" +
-	"\t\tsub\n" +
-	"\t\tshow\n" +
-	"\t/last_active\n" +
-	"\t/teams"
+const helpMessage = "Spike Command Options:\n" +
+	"```" + `
+help
+playing
+	show
+	add
+	remove
+	clear
+skill
+	show
+	set
+	increase
+	decrease
+	show_all
+teams
+update_names
+last_active
+` + "```"
 
 func cmdHelp(s *dg.Session, i *dg.InteractionCreate) {
 	interactionRespond(s, i, helpMessage)

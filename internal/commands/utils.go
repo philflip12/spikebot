@@ -7,18 +7,18 @@ import (
 	dg "github.com/bwmarrin/discordgo"
 )
 
-func getUserName(guildID, userID string, session *dg.Session) (string, error) {
-	name, ok, err := loadUserName(userID)
+func getUserName(serverID, userID string, session *dg.Session) (string, error) {
+	name, ok, err := loadUserName(serverID, userID)
 	if err != nil {
 		return "", err
 	}
 	if !ok {
-		member, err := session.GuildMember(guildID, userID)
+		member, err := session.GuildMember(serverID, userID)
 		if err != nil {
 			return "", errors.New("failed to get user info")
 		}
 		name = getNameFromMember(member)
-		saveUserName(userID, name)
+		saveUserName(serverID, userID, name)
 	}
 	return name, nil
 }
