@@ -12,7 +12,7 @@ import (
 )
 
 // the default largest allowable skill gap between the strongest and weakest created teams.
-const defaultTeamsMaxSkillGap = float64(20)
+const defaultTeamsMaxSkillGap = float64(5)
 const teamGenTimeLimit = 100 * time.Millisecond
 
 func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
@@ -171,7 +171,7 @@ func (teams *Teams) String() string {
 
 	teamsStr := "```"
 	for teamIdx, team := range teams.teams {
-		teamsStr = fmt.Sprintf("%s\nTeam %d %s %v", teamsStr, teamIdx+1, strings.Repeat(".", longestName+1), team.skill)
+		teamsStr = fmt.Sprintf("%s\nTeam %d %s %.2f", teamsStr, teamIdx+1, strings.Repeat(".", longestName+1), team.skill)
 		for _, teammate := range team.players {
 			teamsStr = fmt.Sprintf("%s\n\t%s%s  %d", teamsStr, teammate.Name, strings.Repeat(" ", longestName-len(teammate.Name)), teammate.Skill)
 		}

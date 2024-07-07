@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
@@ -86,14 +87,21 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
+	playerList := make([]Player, 0, len(players))
 	longestName := 0
 	for _, player := range players {
+		playerList = append(playerList, player)
 		if len(player.Name) > longestName {
 			longestName = len(player.Name)
 		}
 	}
+
+	sort.Slice(playerList, func(i, j int) bool {
+		return playerList[i].Skill > playerList[j].Skill
+	})
+
 	str := "Playing group:\n```"
-	for _, player := range players {
+	for _, player := range playerList {
 		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
 	}
 	str = fmt.Sprintf("%s\n```", str)
