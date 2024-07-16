@@ -11,29 +11,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdRank(session *dg.Session, interaction *dg.InteractionCreate) {
+func cmdSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options
 	subCommandName := options[0].Name
 
 	switch subCommandName {
 	case "set":
-		setRank(session, interaction)
+		setSkill(session, interaction)
 	case "increase":
-		increaseRank(session, interaction)
+		increaseSkill(session, interaction)
 	case "decrease":
-		decreaseRank(session, interaction)
+		decreaseSkill(session, interaction)
 	case "show":
-		showRank(session, interaction)
+		showSkill(session, interaction)
 	case "show_all":
-		showRanks(session, interaction)
+		showAllSkill(session, interaction)
 	}
 }
 
-func setRank(session *dg.Session, interaction *dg.InteractionCreate) {
+func setSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	// Passing nil to UserValue avoids an extra API query.
 	userID := options[0].UserValue(nil).ID
-	rank := int(options[1].IntValue())
+	skill := int(options[1].IntValue())
 
 	name, err := getUserName(interaction.GuildID, userID, session)
 	if err != nil {
@@ -42,39 +42,16 @@ func setRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := setPlayerRank(interaction.GuildID, userID, rank); err != nil {
+	if err := setPlayerSkill(interaction.GuildID, userID, skill); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Set \"%s\" skill rank to %d", name, rank)
+	interactionRespondf(session, interaction, "Set \"%s\" skill rank to %d", name, skill)
 }
 
-func increaseRank(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
-	// Passing nil to UserValue avoids an extra API query.
-	userID := options[0].UserValue(nil).ID
-	difference := int(options[1].IntValue())
-
-	name, err := getUserName(interaction.GuildID, userID, session)
-	if err != nil {
-		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
-		return
-	}
-
-	prevRank, newRank, err := modifyPlayerRank(interaction.GuildID, userID, difference)
-	if err != nil {
-		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
-		return
-	}
-
-	interactionRespondf(session, interaction, "Increased \"%s\" skill rank from %d to %d", name, prevRank, newRank)
-}
-
-func decreaseRank(session *dg.Session, interaction *dg.InteractionCreate) {
+func increaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	// Passing nil to UserValue avoids an extra API query.
 	userID := options[0].UserValue(nil).ID
@@ -87,17 +64,40 @@ func decreaseRank(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	prevRank, newRank, err := modifyPlayerRank(interaction.GuildID, userID, -difference)
+	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, userID, difference)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Decreased \"%s\" skill rank from %d to %d", name, prevRank, newRank)
+	interactionRespondf(session, interaction, "Increased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
 }
 
-func showRank(session *dg.Session, interaction *dg.InteractionCreate) {
+func decreaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
+	options := interaction.ApplicationCommandData().Options[0].Options
+	// Passing nil to UserValue avoids an extra API query.
+	userID := options[0].UserValue(nil).ID
+	difference := int(options[1].IntValue())
+
+	name, err := getUserName(interaction.GuildID, userID, session)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
+		return
+	}
+
+	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, userID, -difference)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
+		return
+	}
+
+	interactionRespondf(session, interaction, "Decreased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
+}
+
+func showSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	// Passing nil to UserValue avoids an extra API query.
 	userID := options[0].UserValue(nil).ID
@@ -119,7 +119,7 @@ func showRank(session *dg.Session, interaction *dg.InteractionCreate) {
 	interactionRespondf(session, interaction, "\"%s\" has a skill rank of %d", name, player.Skill)
 }
 
-func showRanks(session *dg.Session, interaction *dg.InteractionCreate) {
+func showAllSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
 		log.Error(err)

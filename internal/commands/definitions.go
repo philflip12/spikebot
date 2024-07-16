@@ -34,7 +34,9 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 	case "playing":
 		cmdPlay(s, i)
 	case "skill":
-		cmdRank(s, i)
+		cmdSkill(s, i)
+	case "guest":
+		cmdGuest(s, i)
 	case "last_active":
 		cmdLastActive(s, i)
 	case "update_names":
@@ -83,7 +85,7 @@ var CommandList = []*dg.ApplicationCommand{
 				Options: []*dg.ApplicationCommandOption{
 					{
 						Name:        "player",
-						Description: "User whose rank will be increased",
+						Description: "User whose skill rank will be increased",
 						Type:        dg.ApplicationCommandOptionUser,
 						Required:    true,
 					},
@@ -215,6 +217,153 @@ var CommandList = []*dg.ApplicationCommand{
 		Name:        "update_names",
 		Description: "Update Spike database with players names",
 	},
+	{
+		Name:        "guest",
+		Description: "Guest variations of other commands",
+		Options: []*dg.ApplicationCommandOption{
+			{
+				Name:        "add",
+				Description: "Add a new guest with a name and skill rank.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest to add",
+						Type:        dg.ApplicationCommandOptionString,
+						Required:    true,
+					},
+					{
+						Name:        "skill",
+						Description: "The skill rank of the guest to add",
+						Type:        dg.ApplicationCommandOptionInteger,
+						Required:    false,
+						MinValue:    ptr(float64(0)),
+						MaxValue:    float64(100),
+					},
+				},
+			},
+			{
+				Name:        "remove",
+				Description: "Remove guest.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest to remove.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "playing_add",
+				Description: "Add a guest to the playing group.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest to add to the playing group.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "playing_remove",
+				Description: "Remove a guest from the playing group.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest to remove from the playing group.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "skill_set",
+				Description: "Set the skill rank of a guest.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest whose skill will be set.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+					{
+						Name:        "skill",
+						Description: "The skill rank to which the guest will be set.",
+						Type:        dg.ApplicationCommandOptionInteger,
+						Required:    true,
+						MinValue:    ptr(float64(0)),
+						MaxValue:    float64(100),
+					},
+				},
+			},
+			{
+				Name:        "skill_increase",
+				Description: "Increase the skill rank of a guest.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest whose skill will be increased.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+					{
+						Name:        "amount",
+						Description: "The amount by which to increase the skill rank.",
+						Type:        dg.ApplicationCommandOptionInteger,
+						Required:    true,
+						MinValue:    ptr(float64(0)),
+						MaxValue:    float64(100),
+					},
+				},
+			},
+			{
+				Name:        "skill_decrease",
+				Description: "Decrease the skill rank of a guest.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "The name of the guest whose skill will be decreased.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+					{
+						Name:        "amount",
+						Description: "The amount by which to decrease the skill rank.",
+						Type:        dg.ApplicationCommandOptionInteger,
+						Required:    true,
+						MinValue:    ptr(float64(0)),
+						MaxValue:    float64(100),
+					},
+				},
+			},
+			{
+				Name:        "skill_show",
+				Description: "Display the current skill rank of a guest.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+				Options: []*dg.ApplicationCommandOption{
+					{
+						Name:        "player",
+						Description: "Guest whose rank will be shown.",
+						Type:        dg.ApplicationCommandOptionRole,
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "show_all",
+				Description: "Display all guests and their skill ranks.",
+				Type:        dg.ApplicationCommandOptionSubCommand,
+			},
+		},
+	},
 }
 
 const helpMessage = "Spike Command Options:\n" +
@@ -231,6 +380,7 @@ skill
 	increase
 	decrease
 	show_all
+guests
 teams
 update_names
 last_active

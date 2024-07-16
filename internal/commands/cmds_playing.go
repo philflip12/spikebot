@@ -19,7 +19,7 @@ func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
 	case "add":
 		addToPlaying(session, interaction)
 	case "remove":
-		delFromPlaying(session, interaction)
+		removeFromPlaying(session, interaction)
 	case "clear":
 		clearPlaying(session, interaction)
 	case "show":
@@ -48,7 +48,7 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	interactionRespondf(session, interaction, "Added \"%s\" to playing", name)
 }
 
-func delFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	// Passing nil to UserValue avoids an extra API query.
 	userID := options[0].UserValue(nil).ID
@@ -60,7 +60,7 @@ func delFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := delPlayingUser(interaction.GuildID, userID); err != nil {
+	if err := removePlayingUser(interaction.GuildID, userID); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return

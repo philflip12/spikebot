@@ -164,7 +164,7 @@ func addPlayingUser(serverID string, userID string) error {
 	return nil
 }
 
-func delPlayingUser(serverID string, userID string) error {
+func removePlayingUser(serverID string, userID string) error {
 	playing[serverID].Lock()
 	defer playing[serverID].Unlock()
 	if err := playing[serverID].Load(); err != nil {
@@ -212,7 +212,7 @@ func getPlaying(serverID string) ([]Player, error) {
 	return result, nil
 }
 
-func setPlayerRank(serverID string, userID string, rank int) error {
+func setPlayerSkill(serverID string, userID string, skill int) error {
 	players[serverID].Lock()
 	defer players[serverID].Unlock()
 	if err := players[serverID].Load(); err != nil {
@@ -224,12 +224,12 @@ func setPlayerRank(serverID string, userID string, rank int) error {
 		return nil
 	}
 
-	player.Skill = rank
+	player.Skill = skill
 	players[serverID].object[userID] = player
 	return players[serverID].Save()
 }
 
-func modifyPlayerRank(serverID string, userID string, diff int) (prev, new int, err error) {
+func modifyPlayerSkill(serverID string, userID string, diff int) (prev, new int, err error) {
 	players[serverID].Lock()
 	defer players[serverID].Unlock()
 	if err := players[serverID].Load(); err != nil {
@@ -292,4 +292,54 @@ func updatePlayerNames(serverID string, nameMap map[string]string) error {
 	}
 
 	return players[serverID].Save()
+}
+
+func saveGuest(serverID, guestID, guestName string, skill int) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	if _, ok := players[serverID].object[guestID]; ok {
+		return fmt.Errorf("cannot save guest \"%s\": ID already in use", guestName)
+	}
+
+	players[serverID].object[guestID] = Player{
+		Name:  guestName,
+		Skill: skill,
+	}
+
+	return players[serverID].Save()
+}
+
+func deleteGuest(serverID, guestID string) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	if _, ok := players[serverID].object[guestID]; !ok {
+		return errors.New("cannot delete guest: ID not found")
+	}
+
+	delete(players[serverID].object, guestID)
+	if err := players[serverID].Save(); err != nil {
+		return err
+	}
+
+	// ensure the guest is deleted from the playing group as well if they are in it.
+	playing[serverID].Lock()
+	defer playing[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	if _, ok := playing[serverID].object[guestID]; !ok {
+		return nil
+	}
+
+	delete(playing[serverID].object, guestID)
+	return playing[serverID].Save()
 }
