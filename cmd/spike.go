@@ -184,7 +184,7 @@ func startSpikeSession(botToken string, serverIDs []string) *spikeSession {
 	}
 
 	// Set the bot permission requirements ("guild" is the develement equivalent of "server")
-	session.Identify.Intents = dg.IntentGuildMessages | dg.IntentGuilds
+	session.Identify.Intents = dg.IntentGuildMessages | dg.IntentGuilds | dg.IntentGuildMembers
 
 	session.AddHandler(cmds.OnInteractionCreate)
 

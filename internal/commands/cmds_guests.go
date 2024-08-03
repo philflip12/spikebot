@@ -97,7 +97,7 @@ func removeGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := deleteGuest(interaction.GuildID, guestID); err != nil {
+	if err := deleteUser(interaction.GuildID, guestID); err != nil {
 		log.Error(err)
 		interactionRespondf(session, interaction, err.Error())
 		return
@@ -149,7 +149,7 @@ func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCrea
 		return
 	}
 
-	if err := addPlayingUser(interaction.GuildID, roleID); err != nil {
+	if err := removePlayingUser(interaction.GuildID, guestID); err != nil {
 		log.Error(err)
 		interactionRespondf(session, interaction, err.Error())
 		return
