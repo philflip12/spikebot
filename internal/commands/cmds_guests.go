@@ -20,18 +20,8 @@ func cmdGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		addGuest(session, interaction)
 	case "remove":
 		removeGuest(session, interaction)
-	case "playing_add":
-		addGuestToPlaying(session, interaction)
-	case "playing_remove":
-		removeGuestFromPlaying(session, interaction)
-	case "skill_set":
-		setGuestSkill(session, interaction)
-	case "skill_increase":
-		increaseGuestSkill(session, interaction)
-	case "skill_decrease":
-		decreaseGuestSkill(session, interaction)
-	case "skill_show":
-		showGuestSkill(session, interaction)
+	case "rename":
+		renameGuest(session, interaction)
 	case "show_all":
 		showAllGuests(session, interaction)
 	}
@@ -40,10 +30,7 @@ func cmdGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 func addGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	guestName := options[0].StringValue()
-	skill := -1
-	if len(options) > 1 {
-		skill = int(options[1].IntValue())
-	}
+	skill := int(options[1].IntValue())
 
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
@@ -53,7 +40,7 @@ func addGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 	for _, player := range players {
 		if player.Name == guestName {
-			interactionRespondf(session, interaction, "player with name \"%s\" already exists", guestName)
+			interactionRespondf(session, interaction, "player with name %q already exists", guestName)
 			return
 		}
 	}
@@ -75,9 +62,9 @@ func addGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	if skill == -1 {
-		interactionRespondf(session, interaction, "Added guest \"%s\"", guestName)
+		interactionRespondf(session, interaction, "Added guest %q", guestName)
 	} else {
-		interactionRespondf(session, interaction, "Added guest \"%s\" with skill rank %d", guestName, skill)
+		interactionRespondf(session, interaction, "Added guest %q with skill rank %d", guestName, skill)
 	}
 }
 
@@ -105,11 +92,44 @@ func removeGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	session.GuildRoleDelete(interaction.GuildID, roleID)
 
-	interactionRespondf(session, interaction, "Removed guest \"%s\"", player.Name)
+	interactionRespondf(session, interaction, "Removed guest %q", player.Name)
+}
+
+func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
+	options := interaction.ApplicationCommandData().Options[0].Options
+	roleID := options[0].RoleValue(nil, "").ID
+	guestID := "g" + roleID
+	newName := options[1].StringValue()
+
+	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	if err != nil {
+		log.Error(err)
+		interactionRespondf(session, interaction, err.Error())
+		return
+	}
+	if !ok {
+		interactionRespondf(session, interaction, "Role selected does not represent a guest.")
+		return
+	}
+
+	params := &dg.RoleParams{Name: newName + " guest"}
+	if _, err := session.GuildRoleEdit(interaction.GuildID, roleID, params); err != nil {
+		log.Error(err)
+		interactionRespondf(session, interaction, err.Error())
+		return
+	}
+
+	if err := renamePlayer(interaction.GuildID, guestID, newName); err != nil {
+		log.Error(err)
+		interactionRespondf(session, interaction, err.Error())
+		return
+	}
+
+	interactionRespondf(session, interaction, "Renamed guest %q to %q", player.Name, newName)
 }
 
 func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 
@@ -130,11 +150,11 @@ func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	interactionRespondf(session, interaction, "Added guest \"%s\" to playing", player.Name)
+	interactionRespondf(session, interaction, "Added guest %q to playing", player.Name)
 }
 
 func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 
@@ -155,11 +175,11 @@ func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCrea
 		return
 	}
 
-	interactionRespondf(session, interaction, "Removed guest \"%s\" to playing", player.Name)
+	interactionRespondf(session, interaction, "Removed guest %q to playing", player.Name)
 }
 
 func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	skill := int(options[1].IntValue())
 	guestID := "g" + roleID
@@ -181,11 +201,11 @@ func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	interactionRespondf(session, interaction, "Set \"%s\" skill rank to %d", player.Name, skill)
+	interactionRespondf(session, interaction, "Set %q skill rank to %d", player.Name, skill)
 }
 
 func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	difference := int(options[1].IntValue())
 	guestID := "g" + roleID
@@ -208,11 +228,11 @@ func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 		return
 	}
 
-	interactionRespondf(session, interaction, "Increased guest \"%s\" skill rank from %d to %d", player.Name, prevSkill, newSkill)
+	interactionRespondf(session, interaction, "Increased guest %q skill rank from %d to %d", player.Name, prevSkill, newSkill)
 }
 
 func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	difference := int(options[1].IntValue())
 	guestID := "g" + roleID
@@ -235,11 +255,11 @@ func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 		return
 	}
 
-	interactionRespondf(session, interaction, "Decreased guest \"%s\" skill rank from %d to %d", player.Name, prevSkill, newSkill)
+	interactionRespondf(session, interaction, "Decreased guest %q skill rank from %d to %d", player.Name, prevSkill, newSkill)
 }
 
 func showGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
-	options := interaction.ApplicationCommandData().Options[0].Options
+	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 
@@ -254,7 +274,7 @@ func showGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	interactionRespondf(session, interaction, "Guest \"%s\" has a skill rank of %d", player.Name, player.Skill)
+	interactionRespondf(session, interaction, "Guest %q has a skill rank of %d", player.Name, player.Skill)
 }
 
 func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate) {

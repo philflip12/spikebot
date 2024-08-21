@@ -26,6 +26,19 @@ func cmdSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 		showSkill(session, interaction)
 	case "show_all":
 		showAllSkill(session, interaction)
+	case "guest":
+		options = options[0].Options
+		subCommandName := options[0].Name
+		switch subCommandName {
+		case "set":
+			setGuestSkill(session, interaction)
+		case "increase":
+			increaseGuestSkill(session, interaction)
+		case "decrease":
+			decreaseGuestSkill(session, interaction)
+		case "show":
+			showGuestSkill(session, interaction)
+		}
 	}
 }
 

@@ -62,7 +62,10 @@ func main() {
 	defer spike.Close()
 
 	// Register commands for the servers previously specified
-	spike.registerCommmands(cmds.CommandList)
+	if err := spike.registerCommmands(cmds.CommandList); err != nil {
+		log.Info(err)
+		return
+	}
 	// Remove all registered commands from the servers when spike stops running.
 	defer spike.deregisterCommands()
 
@@ -201,10 +204,14 @@ func startSpikeSession(botToken string, serverIDs []string) *spikeSession {
 
 }
 
-func (s *spikeSession) registerCommmands(cmds []*dg.ApplicationCommand) {
+func (s *spikeSession) registerCommmands(cmds []*dg.ApplicationCommand) error {
 	for _, serverID := range s.serverIDs {
-		s.ApplicationCommandBulkOverwrite(s.State.User.ID, serverID, cmds)
+		_, err := s.ApplicationCommandBulkOverwrite(s.State.User.ID, serverID, cmds)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (s *spikeSession) deregisterCommands() {

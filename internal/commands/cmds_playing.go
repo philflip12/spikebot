@@ -22,8 +22,17 @@ func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
 		removeFromPlaying(session, interaction)
 	case "clear":
 		clearPlaying(session, interaction)
-	case "show":
+	case "show_all":
 		showPlaying(session, interaction)
+	case "guest":
+		options = options[0].Options
+		subCommandName := options[0].Name
+		switch subCommandName {
+		case "add":
+			addGuestToPlaying(session, interaction)
+		case "remove":
+			removeGuestFromPlaying(session, interaction)
+		}
 	}
 }
 

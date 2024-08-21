@@ -27,25 +27,28 @@ func SetServerIDs(serverIDs []string) {
 	playing = make(map[string]*persistentObject[map[string]struct{}], len(serverIDs))
 	for _, serverID := range serverIDs {
 		players[serverID] = &persistentObject[map[string]Player]{
-			filePath: fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
-			fileName: playerDataFileName,
-			makeNew:  func() map[string]Player { return map[string]Player{} },
+			filePath:   fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
+			fileName:   playerDataFileName,
+			makeNew:    func() map[string]Player { return map[string]Player{} },
+			checkValid: func(m map[string]Player) bool { return m != nil },
 		}
 		playing[serverID] = &persistentObject[map[string]struct{}]{
-			filePath: fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
-			fileName: playingListFileName,
-			makeNew:  func() map[string]struct{} { return map[string]struct{}{} },
+			filePath:   fmt.Sprintf("%s/%s", persistentDataDirectory, serverID),
+			fileName:   playingListFileName,
+			makeNew:    func() map[string]struct{} { return map[string]struct{}{} },
+			checkValid: func(m map[string]struct{}) bool { return m != nil },
 		}
 	}
 }
 
 type persistentObject[T any] struct {
-	Mutex    sync.Mutex
-	isLoaded bool
-	filePath string
-	fileName string
-	object   T
-	makeNew  func() T
+	Mutex      sync.Mutex
+	isLoaded   bool
+	filePath   string
+	fileName   string
+	object     T
+	makeNew    func() T
+	checkValid func(T) bool
 }
 
 func (p *persistentObject[T]) Lock() {
@@ -82,6 +85,9 @@ func (p *persistentObject[T]) Load() error {
 	if err := json.Unmarshal(data, &object); err != nil {
 		return err
 	}
+	if !p.checkValid(object) {
+		object = p.makeNew()
+	}
 
 	p.object = object
 	p.isLoaded = true
@@ -89,6 +95,9 @@ func (p *persistentObject[T]) Load() error {
 }
 
 func (p *persistentObject[T]) Save() error {
+	if !p.checkValid(p.object) {
+		return errors.New("saved object is not valid")
+	}
 	data, err := json.Marshal(p.object)
 	if err != nil {
 		return err
@@ -151,7 +160,7 @@ func deleteUser(serverID, userID string) error {
 	}
 
 	if _, ok := players[serverID].object[userID]; !ok {
-		return errors.New("cannot delete guest: ID not found")
+		return errors.New("cannot delete user: ID not found")
 	}
 
 	delete(players[serverID].object, userID)
@@ -159,7 +168,7 @@ func deleteUser(serverID, userID string) error {
 		return err
 	}
 
-	// ensure the guest is deleted from the playing group as well if they are in it.
+	// ensure the user is deleted from the playing group as well if they are in it.
 	playing[serverID].Lock()
 	defer playing[serverID].Unlock()
 	if err := players[serverID].Load(); err != nil {
@@ -369,6 +378,24 @@ func saveGuest(serverID, guestID, guestName string, skill int) error {
 		Name:  guestName,
 		Skill: skill,
 	}
+
+	return players[serverID].Save()
+}
+
+func renamePlayer(serverID, guestID, guestName string) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	player, ok := players[serverID].object[guestID]
+	if !ok {
+		return fmt.Errorf("guest with id %s not found", guestID)
+	}
+
+	player.Name = guestName
+	players[serverID].object[guestID] = player
 
 	return players[serverID].Save()
 }

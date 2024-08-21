@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -49,17 +50,23 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	if len(players) > 0 {
 		removeList := make([]string, 0, len(players))
 		for userID := range players {
-			removeList = append(removeList, userID)
+			// userID's starting with the guest prefix should not be removed.
+			if !strings.HasPrefix(userID, "g") {
+				removeList = append(removeList, userID)
+			}
 		}
 		if err := deleteUsers(interaction.GuildID, removeList); err != nil {
 			log.Error(err)
 			interactionRespond(session, interaction, err.Error())
 		}
 
-		// Add information to response message about players no longer in the server
-		responseString = fmt.Sprintf("%s\nRemoved players no longer in the server:", responseString)
-		for _, player := range players {
-			responseString = fmt.Sprintf("%s\n\t%s", responseString, player.Name)
+		if len(removeList) > 0 {
+			// Add information to response message about players no longer in the server
+			responseString = fmt.Sprintf("%s\nRemoved players no longer in the server:", responseString)
+			for _, userID := range removeList {
+				player := players[userID]
+				responseString = fmt.Sprintf("%s\n\t%s", responseString, player.Name)
+			}
 		}
 	}
 	interactionRespond(session, interaction, responseString)
