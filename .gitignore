@@ -26,3 +26,4 @@ go.work.sum
 
 # ignore persistent data directory
 persistentData
+persistentData_Backup

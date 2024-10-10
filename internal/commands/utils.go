@@ -23,6 +23,56 @@ func getUserName(serverID, userID string, session *dg.Session) (string, error) {
 	return name, nil
 }
 
+func getUserNames(serverID string, userIDs []string, session *dg.Session) ([]string, error) {
+	players, err := getPlayers(serverID)
+	if err != nil {
+		return nil, fmt.Errorf("error loading players: %w", err)
+	}
+
+	names := make([]string, 0, len(userIDs))
+	missingIDs := map[string]struct{}{}
+	for _, id := range userIDs {
+		player, ok := players[id]
+		if ok {
+			names = append(names, player.Name)
+		} else {
+			missingIDs[id] = struct{}{}
+		}
+	}
+
+	switch len(missingIDs) {
+	case 0:
+	case 1:
+		for id, _ := range missingIDs {
+			member, err := session.GuildMember(serverID, id)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get user info: %w", err)
+			}
+			name := getNameFromMember(member)
+			names = append(names, name)
+			saveUserName(serverID, id, name)
+		}
+	default:
+		members, err := session.GuildMembers(serverID, "", 1000)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get users' info: %w", err)
+		}
+		missingRemaining := len(missingIDs)
+		for _, member := range members {
+			if _, ok := missingIDs[member.User.ID]; ok {
+				name := getNameFromMember(member)
+				names = append(names, name)
+				saveUserName(serverID, member.User.ID, name)
+				missingRemaining--
+				if missingRemaining == 0 {
+					break
+				}
+			}
+		}
+	}
+	return names, nil
+}
+
 func getNameFromMember(member *dg.Member) string {
 	switch {
 	case member.Nick != "":

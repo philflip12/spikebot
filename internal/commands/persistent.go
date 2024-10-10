@@ -219,15 +219,21 @@ func deleteUsers(serverID string, userIDs []string) error {
 	return playing[serverID].Save()
 }
 
-func addPlayingUser(serverID string, userID string) error {
+func addPlayingUsers(serverID string, userIDs ...string) error {
 	playing[serverID].Lock()
 	defer playing[serverID].Unlock()
 	if err := playing[serverID].Load(); err != nil {
 		return err
 	}
 
-	if _, ok := playing[serverID].object[userID]; !ok {
-		playing[serverID].object[userID] = struct{}{}
+	change := false
+	for i := range userIDs {
+		if _, ok := playing[serverID].object[userIDs[i]]; !ok {
+			playing[serverID].object[userIDs[i]] = struct{}{}
+			change = true
+		}
+	}
+	if change {
 		return playing[serverID].Save()
 	}
 	return nil

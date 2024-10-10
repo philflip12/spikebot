@@ -38,23 +38,34 @@ func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
 
 func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
-	// Passing nil to UserValue avoids an extra API query.
-	userID := options[0].UserValue(nil).ID
+	userIDs := make([]string, len(options))
+	for i := range options {
+		// Passing nil to UserValue avoids an extra API query.
+		userIDs[i] = options[i].UserValue(nil).ID
+	}
 
-	name, err := getUserName(interaction.GuildID, userID, session)
+	names, err := getUserNames(interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	if err := addPlayingUser(interaction.GuildID, userID); err != nil {
+	if err := addPlayingUsers(interaction.GuildID, userIDs...); err != nil {
 		log.Error(err)
 		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Added \"%s\" to playing", name)
+	if len(names) == 1 {
+		interactionRespondf(session, interaction, "Added \"%s\" to playing", names[0])
+		return
+	}
+	response := "Added users to playing:"
+	for i := range names {
+		response = fmt.Sprintf("%s\n\t%s", response, names[i])
+	}
+	interactionRespond(session, interaction, response)
 }
 
 func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
