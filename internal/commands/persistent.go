@@ -239,15 +239,21 @@ func addPlayingUsers(serverID string, userIDs ...string) error {
 	return nil
 }
 
-func removePlayingUser(serverID string, userID string) error {
+func removePlayingUsers(serverID string, userIDs ...string) error {
 	playing[serverID].Lock()
 	defer playing[serverID].Unlock()
 	if err := playing[serverID].Load(); err != nil {
 		return err
 	}
 
-	if _, ok := playing[serverID].object[userID]; ok {
-		delete(playing[serverID].object, userID)
+	change := false
+	for i := range userIDs {
+		if _, ok := playing[serverID].object[userIDs[i]]; ok {
+			delete(playing[serverID].object, userIDs[i])
+			change = true
+		}
+	}
+	if change {
 		return playing[serverID].Save()
 	}
 	return nil

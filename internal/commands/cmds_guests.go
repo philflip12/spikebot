@@ -175,27 +175,47 @@ func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 
 func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
-	roleID := options[0].RoleValue(nil, "").ID
-	guestID := "g" + roleID
+	roleIDs := make([]string, len(options))
+	for i := range options {
+		roleIDs[i] = options[i].RoleValue(nil, "").ID
+	}
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
 		interactionRespondf(session, interaction, err.Error())
 		return
 	}
-	if !ok {
-		interactionRespondf(session, interaction, "Role selected does not represent a guest")
-		return
+	invalidRoles := []string{}
+	guestIDs := make([]string, 0, len(roleIDs))
+	for i := range roleIDs {
+		guestID := "g" + roleIDs[i]
+		if _, ok := players[guestID]; !ok {
+			invalidRoles = append(invalidRoles, roleIDs[i])
+		} else {
+			guestIDs = append(guestIDs, guestID)
+		}
 	}
 
-	if err := removePlayingUser(interaction.GuildID, guestID); err != nil {
+	if err := addPlayingUsers(interaction.GuildID, guestIDs...); err != nil {
 		log.Error(err)
 		interactionRespondf(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Removed guest %q from playing", player.Name)
+	response := ""
+	if len(invalidRoles) != 0 {
+		response = "One or more roles did not represent a guest\n\n"
+	}
+	if len(guestIDs) == 1 {
+		response = fmt.Sprintf("%sRemoved guest %q from playing", response, players[guestIDs[0]].Name)
+	} else if len(guestIDs) > 1 {
+		response = fmt.Sprintf("%sRemoved guests from playing:", response)
+		for _, id := range guestIDs {
+			response = fmt.Sprintf("%s\n\t%s", response, players[id].Name)
+		}
+	}
+	interactionRespond(session, interaction, response)
 }
 
 func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {

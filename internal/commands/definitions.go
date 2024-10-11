@@ -384,10 +384,148 @@ var CommandList = []*dg.ApplicationCommand{
 				Type:        dg.ApplicationCommandOptionSubCommand,
 				Options: []*dg.ApplicationCommandOption{
 					{
-						Name:        "player",
-						Description: "User to remove from the list",
+						Name:        "player_1",
+						Description: "User to remove from the playing group",
 						Type:        dg.ApplicationCommandOptionUser,
 						Required:    true,
+					},
+					{
+						Name:        "player_2",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_3",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_4",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_5",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_6",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_7",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_8",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_9",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_10",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_11",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_12",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_13",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_14",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_15",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_16",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_17",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_18",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_19",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_20",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_21",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_22",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_23",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
+					},
+					{
+						Name:        "player_24",
+						Description: "User to remove from the playing group",
+						Type:        dg.ApplicationCommandOptionUser,
+						Required:    false,
 					},
 				},
 			},
@@ -413,7 +551,7 @@ var CommandList = []*dg.ApplicationCommand{
 						Options: []*dg.ApplicationCommandOption{
 							{
 								Name:        "guest_1",
-								Description: "The name of the guest to add to the playing group",
+								Description: "Guest to add to the playing group",
 								Type:        dg.ApplicationCommandOptionRole,
 								Required:    true,
 							},
@@ -563,10 +701,148 @@ var CommandList = []*dg.ApplicationCommand{
 						Type:        dg.ApplicationCommandOptionSubCommand,
 						Options: []*dg.ApplicationCommandOption{
 							{
-								Name:        "player",
-								Description: "The name of the guest to remove from the playing group",
+								Name:        "guest_1",
+								Description: "Guest to remove from the playing group",
 								Type:        dg.ApplicationCommandOptionRole,
 								Required:    true,
+							},
+							{
+								Name:        "guest_2",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_3",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_4",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_5",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_6",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_7",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_8",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_9",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_10",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_11",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_12",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_13",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_14",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_15",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_16",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_17",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_18",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_19",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_20",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_21",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_22",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_23",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
+							},
+							{
+								Name:        "guest_24",
+								Description: "Guest to remove from the playing group",
+								Type:        dg.ApplicationCommandOptionRole,
+								Required:    false,
 							},
 						},
 					},
@@ -713,8 +989,3 @@ func cmdHelp(s *dg.Session, i *dg.InteractionCreate) {
 func ptr[T any](value T) *T {
 	return &value
 }
-
-// teams
-//
-
-// last active @name
