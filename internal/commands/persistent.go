@@ -293,6 +293,16 @@ func getPlaying(serverID string) ([]Player, error) {
 	return result, nil
 }
 
+func getPlayingCount(serverID string) (int, error) {
+	playing[serverID].Lock()
+	defer playing[serverID].Unlock()
+	if err := playing[serverID].Load(); err != nil {
+		return 0, err
+	}
+
+	return len(playing[serverID].object), nil
+}
+
 func setPlayerSkill(serverID string, userID string, skill int) error {
 	players[serverID].Lock()
 	defer players[serverID].Unlock()

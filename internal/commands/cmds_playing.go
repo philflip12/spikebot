@@ -57,14 +57,22 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
+	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
+		return
+	}
+
 	if len(names) == 1 {
-		interactionRespondf(session, interaction, "Added \"%s\" to playing", names[0])
+		interactionRespondf(session, interaction, "Added \"%s\" to playing%s", names[0], numPlayingStr)
 		return
 	}
 	response := "Added users to playing:"
 	for i := range names {
 		response = fmt.Sprintf("%s\n\t%s", response, names[i])
 	}
+	response = fmt.Sprintf("%s%s", response, numPlayingStr)
 	interactionRespond(session, interaction, response)
 }
 
@@ -89,14 +97,22 @@ func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
+	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
+		return
+	}
+
 	if len(names) == 1 {
-		interactionRespondf(session, interaction, "Removed \"%s\" from playing", names[0])
+		interactionRespondf(session, interaction, "Removed \"%s\" from playing%s", names[0], numPlayingStr)
 		return
 	}
 	response := "Removed users from playing:"
 	for i := range names {
 		response = fmt.Sprintf("%s\n\t%s", response, names[i])
 	}
+	response = fmt.Sprintf("%s%s", response, numPlayingStr)
 	interactionRespond(session, interaction, response)
 }
 
@@ -134,7 +150,7 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	if len(playerList) == 0 {
 		interactionRespond(session, interaction, "The playing group is empty")
 	}
-	str := "Playing group:\n```"
+	str := fmt.Sprintf("%d in playing group:\n```", len(playerList))
 	for _, player := range playerList {
 		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
 	}

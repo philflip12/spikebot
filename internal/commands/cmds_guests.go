@@ -158,17 +158,25 @@ func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
+	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
+		return
+	}
+
 	response := ""
 	if len(invalidRoles) != 0 {
 		response = "One or more roles did not represent a guest\n\n"
 	}
 	if len(guestIDs) == 1 {
-		response = fmt.Sprintf("%sAdded guest %q to playing", response, players[guestIDs[0]].Name)
+		response = fmt.Sprintf("%sAdded guest %q to playing%s", response, players[guestIDs[0]].Name, numPlayingStr)
 	} else if len(guestIDs) > 1 {
 		response = fmt.Sprintf("%sAdded guests to playing:", response)
 		for _, id := range guestIDs {
 			response = fmt.Sprintf("%s\n\t%s", response, players[id].Name)
 		}
+		response = fmt.Sprintf("%s%s", response, numPlayingStr)
 	}
 	interactionRespond(session, interaction, response)
 }
@@ -197,9 +205,16 @@ func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCrea
 		}
 	}
 
-	if err := addPlayingUsers(interaction.GuildID, guestIDs...); err != nil {
+	if err := removePlayingUsers(interaction.GuildID, guestIDs...); err != nil {
 		log.Error(err)
 		interactionRespondf(session, interaction, err.Error())
+		return
+	}
+
+	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		interactionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -208,12 +223,13 @@ func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCrea
 		response = "One or more roles did not represent a guest\n\n"
 	}
 	if len(guestIDs) == 1 {
-		response = fmt.Sprintf("%sRemoved guest %q from playing", response, players[guestIDs[0]].Name)
+		response = fmt.Sprintf("%sRemoved guest %q from playing%s", response, players[guestIDs[0]].Name, numPlayingStr)
 	} else if len(guestIDs) > 1 {
 		response = fmt.Sprintf("%sRemoved guests from playing:", response)
 		for _, id := range guestIDs {
 			response = fmt.Sprintf("%s\n\t%s", response, players[id].Name)
 		}
+		response = fmt.Sprintf("%s%s", response, numPlayingStr)
 	}
 	interactionRespond(session, interaction, response)
 }

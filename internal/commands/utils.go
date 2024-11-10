@@ -96,3 +96,14 @@ func interactionRespond(session *dg.Session, interaction *dg.InteractionCreate, 
 		},
 	})
 }
+
+func getNumPlayingString(serverID string) (string, error) {
+	numPlaying, err := getPlayingCount(serverID)
+	if err != nil {
+		return "", err
+	}
+	if numPlaying == 0 {
+		return "", nil
+	}
+	return fmt.Sprintf("\n%d in playing group", numPlaying), nil
+}
