@@ -5,7 +5,6 @@ package commands
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -141,12 +140,8 @@ func showAllSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	playerList := make([]Player, 0, len(players))
-	longestName := 0
 	for _, player := range players {
 		playerList = append(playerList, player)
-		if len(player.Name) > longestName {
-			longestName = len(player.Name)
-		}
 	}
 
 	sort.Slice(playerList, func(i, j int) bool {
@@ -155,9 +150,11 @@ func showAllSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	str := "All Skill Ranks:\n```"
 	for _, player := range playerList {
-		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
+		str = fmt.Sprintf("%s\n%3d %s", str, player.Skill, player.Name)
 	}
 	str = fmt.Sprintf("%s\n```", str)
 
-	interactionRespond(session, interaction, str)
+	if err := interactionRespond(session, interaction, str); err != nil {
+		log.Error(err)
+	}
 }
