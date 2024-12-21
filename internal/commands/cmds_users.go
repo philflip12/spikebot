@@ -5,18 +5,19 @@ import (
 	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
+	rsp "github.com/philflip12/spikebot/internal/responder"
 	log "github.com/sirupsen/logrus"
 )
 
 func cmdLastActive(session *dg.Session, interaction *dg.InteractionCreate) {
-	interactionRespond(session, interaction, "Not yet implemented")
+	rsp.InteractionRespond(session, interaction, "Not yet implemented")
 }
 
 func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -24,7 +25,7 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	members, err := session.GuildMembers(interaction.GuildID, "", 1000)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -41,7 +42,7 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	// Save off the new names
 	if err := updatePlayerNames(interaction.GuildID, nameMap); err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 	}
 
 	responseString := "Updated the names of all tracked players"
@@ -57,7 +58,7 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 		}
 		if err := deleteUsers(interaction.GuildID, removeList); err != nil {
 			log.Error(err)
-			interactionRespond(session, interaction, err.Error())
+			rsp.InteractionRespond(session, interaction, err.Error())
 		}
 
 		if len(removeList) > 0 {
@@ -69,5 +70,5 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 			}
 		}
 	}
-	interactionRespond(session, interaction, responseString)
+	rsp.InteractionRespond(session, interaction, responseString)
 }

@@ -84,19 +84,6 @@ func getNameFromMember(member *dg.Member) string {
 	}
 }
 
-func interactionRespondf(session *dg.Session, interaction *dg.InteractionCreate, message string, a ...any) error {
-	return interactionRespond(session, interaction, fmt.Sprintf(message, a...))
-}
-
-func interactionRespond(session *dg.Session, interaction *dg.InteractionCreate, message string) error {
-	return session.InteractionRespond(interaction.Interaction, &dg.InteractionResponse{
-		Type: dg.InteractionResponseChannelMessageWithSource,
-		Data: &dg.InteractionResponseData{
-			Content: message,
-		},
-	})
-}
-
 func getNumPlayingString(serverID string) (string, error) {
 	numPlaying, err := getPlayingCount(serverID)
 	if err != nil {

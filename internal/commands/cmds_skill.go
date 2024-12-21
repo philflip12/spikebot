@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	dg "github.com/bwmarrin/discordgo"
+	rsp "github.com/philflip12/spikebot/internal/responder"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,17 +51,17 @@ func setSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	name, err := getUserName(interaction.GuildID, userID, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if err := setPlayerSkill(interaction.GuildID, userID, skill); err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Set \"%s\" skill rank to %d", name, skill)
+	rsp.InteractionRespondf(session, interaction, "Set \"%s\" skill rank to %d", name, skill)
 }
 
 func increaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
@@ -72,18 +73,18 @@ func increaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	name, err := getUserName(interaction.GuildID, userID, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, userID, difference)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Increased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
+	rsp.InteractionRespondf(session, interaction, "Increased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
 }
 
 func decreaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
@@ -95,18 +96,18 @@ func decreaseSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	name, err := getUserName(interaction.GuildID, userID, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, userID, -difference)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "Decreased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
+	rsp.InteractionRespondf(session, interaction, "Decreased \"%s\" skill rank from %d to %d", name, prevSkill, newSkill)
 }
 
 func showSkill(session *dg.Session, interaction *dg.InteractionCreate) {
@@ -117,25 +118,25 @@ func showSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	name, err := getUserName(interaction.GuildID, userID, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	player, _, err := getPlayer(interaction.GuildID, userID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespondf(session, interaction, "\"%s\" has a skill rank of %d", name, player.Skill)
+	rsp.InteractionRespondf(session, interaction, "\"%s\" has a skill rank of %d", name, player.Skill)
 }
 
 func showAllSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -154,7 +155,5 @@ func showAllSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 	str = fmt.Sprintf("%s\n```", str)
 
-	if err := interactionRespond(session, interaction, str); err != nil {
-		log.Error(err)
-	}
+	rsp.InteractionRespond(session, interaction, str)
 }

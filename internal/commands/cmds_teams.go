@@ -8,6 +8,7 @@ import (
 	"time"
 
 	dg "github.com/bwmarrin/discordgo"
+	rsp "github.com/philflip12/spikebot/internal/responder"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,12 +27,12 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlaying(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if len(players) < numTeams {
-		interactionRespondf(session, interaction, "%d players not enough to make %d teams", len(players), numTeams)
+		rsp.InteractionRespondf(session, interaction, "%d players not enough to make %d teams", len(players), numTeams)
 		return
 	}
 
@@ -47,7 +48,7 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 		for _, name := range unsetPlayers {
 			str = fmt.Sprintf("%s\n\t%s", str, name)
 		}
-		interactionRespond(session, interaction, str)
+		rsp.InteractionRespond(session, interaction, str)
 		return
 	}
 
@@ -55,10 +56,10 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	if teams.skillGap <= maxSkillGap {
 		str := fmt.Sprintf("Teams found:%s", teams.String())
-		interactionRespond(session, interaction, str)
+		rsp.InteractionRespond(session, interaction, str)
 	} else {
 		str := fmt.Sprintf("No valid team. Best option:%s", teams.String())
-		interactionRespond(session, interaction, str)
+		rsp.InteractionRespond(session, interaction, str)
 	}
 }
 

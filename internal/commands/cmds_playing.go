@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
+	rsp "github.com/philflip12/spikebot/internal/responder"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,25 +48,25 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	names, err := getUserNames(interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if err := addPlayingUsers(interaction.GuildID, userIDs...); err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if len(names) == 1 {
-		interactionRespondf(session, interaction, "Added \"%s\" to playing%s", names[0], numPlayingStr)
+		rsp.InteractionRespondf(session, interaction, "Added \"%s\" to playing%s", names[0], numPlayingStr)
 		return
 	}
 	response := "Added users to playing:"
@@ -73,7 +74,7 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		response = fmt.Sprintf("%s\n\t%s", response, names[i])
 	}
 	response = fmt.Sprintf("%s%s", response, numPlayingStr)
-	interactionRespond(session, interaction, response)
+	rsp.InteractionRespond(session, interaction, response)
 }
 
 func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
@@ -87,25 +88,25 @@ func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	names, err := getUserNames(interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if err := removePlayingUsers(interaction.GuildID, userIDs...); err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
 	if len(names) == 1 {
-		interactionRespondf(session, interaction, "Removed \"%s\" from playing%s", names[0], numPlayingStr)
+		rsp.InteractionRespondf(session, interaction, "Removed \"%s\" from playing%s", names[0], numPlayingStr)
 		return
 	}
 	response := "Removed users from playing:"
@@ -113,24 +114,24 @@ func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		response = fmt.Sprintf("%s\n\t%s", response, names[i])
 	}
 	response = fmt.Sprintf("%s%s", response, numPlayingStr)
-	interactionRespond(session, interaction, response)
+	rsp.InteractionRespond(session, interaction, response)
 }
 
 func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	if err := clearPlayingUsers(interaction.GuildID); err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	interactionRespond(session, interaction, "Cleared all users from playing")
+	rsp.InteractionRespond(session, interaction, "Cleared all users from playing")
 }
 
 func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlaying(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
-		interactionRespond(session, interaction, err.Error())
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -148,7 +149,7 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	})
 
 	if len(playerList) == 0 {
-		interactionRespond(session, interaction, "The playing group is empty")
+		rsp.InteractionRespond(session, interaction, "The playing group is empty")
 	}
 	str := fmt.Sprintf("%d in playing group:\n```", len(playerList))
 	for _, player := range playerList {
@@ -156,5 +157,5 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 	str = fmt.Sprintf("%s\n```", str)
 
-	interactionRespond(session, interaction, str)
+	rsp.InteractionRespond(session, interaction, str)
 }

@@ -5,6 +5,7 @@ package commands
 
 import (
 	dg "github.com/bwmarrin/discordgo"
+	rsp "github.com/philflip12/spikebot/internal/responder"
 )
 
 var channelMap map[string]struct{}
@@ -31,6 +32,8 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 	switch i.ApplicationCommandData().Name {
 	case "help":
 		cmdHelp(s, i)
+	case "continue":
+		cmdContinue(s, i)
 	case "playing":
 		cmdPlay(s, i)
 	case "skill":
@@ -52,6 +55,10 @@ var CommandList = []*dg.ApplicationCommand{
 	{
 		Name:        "help",
 		Description: "Print all spike commands",
+	},
+	{
+		Name:        "continue",
+		Description: "Continue printing output from the previous command",
 	},
 	{
 		Name:        "skill",
@@ -983,7 +990,13 @@ update_names
 ` + "```"
 
 func cmdHelp(s *dg.Session, i *dg.InteractionCreate) {
-	interactionRespond(s, i, helpMessage)
+	rsp.InteractionRespond(s, i, helpMessage)
+}
+
+func cmdContinue(s *dg.Session, i *dg.InteractionCreate) {
+	if err := rsp.InteractionContinue(s, i); err == rsp.ErrNoResponseContinuation {
+		rsp.InteractionRespond(s, i, err.Error())
+	}
 }
 
 func ptr[T any](value T) *T {
