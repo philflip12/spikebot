@@ -47,7 +47,7 @@ func newResponseManager() *responseManager {
 	}
 }
 
-const maxMessageLen = 1000
+const maxMessageLen = 2000
 const maxSplitCutoff = 100
 
 const continuePrompt = "\n...\n*/continue to show more*"

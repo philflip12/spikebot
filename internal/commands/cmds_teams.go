@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	dg "github.com/bwmarrin/discordgo"
@@ -16,6 +18,15 @@ import (
 const defaultTeamsMaxSkillGap = float64(5)
 const teamGenTimeLimit = 100 * time.Millisecond
 
+func cmdRedoTeams(session *dg.Session, interaction *dg.InteractionCreate) {
+	numTeams, maxSkillGap, err := getLastTeamsOptions(interaction.GuildID)
+	if err != nil {
+		rsp.InteractionRespond(session, interaction, err.Error())
+	}
+
+	cmdTeamsSubCall(session, interaction, numTeams, maxSkillGap)
+}
+
 func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options
 	numTeams := int(options[0].IntValue())
@@ -24,6 +35,12 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 		maxSkillGap = float64(options[1].IntValue())
 	}
 
+	updateLastTeamsOptions(interaction.GuildID, numTeams, maxSkillGap)
+
+	cmdTeamsSubCall(session, interaction, numTeams, maxSkillGap)
+}
+
+func cmdTeamsSubCall(session *dg.Session, interaction *dg.InteractionCreate, numTeams int, maxSkillGap float64) {
 	players, err := getPlaying(interaction.GuildID)
 	if err != nil {
 		log.Error(err)
@@ -179,4 +196,47 @@ func (teams *Teams) String() string {
 	}
 	teamsStr = fmt.Sprintf("%s\n```", teamsStr)
 	return teamsStr
+}
+
+var lastTeamsOptions map[string]*teamsOptions
+
+func setLastTeamsOptionsServerIDs(serverIDs []string) {
+	lastTeamsOptions = make(map[string]*teamsOptions, len(serverIDs))
+	for _, serverID := range serverIDs {
+		lastTeamsOptions[serverID] = &teamsOptions{}
+	}
+}
+
+type teamsOptions struct {
+	mutex       sync.Mutex
+	isSet       bool
+	numTeams    int
+	maxSkillGap float64
+}
+
+func updateLastTeamsOptions(guildID string, numTeams int, maxSkillGap float64) {
+	options := lastTeamsOptions[guildID]
+	options.mutex.Lock()
+	options.updateOptions(numTeams, maxSkillGap)
+	options.mutex.Unlock()
+}
+
+func getLastTeamsOptions(guildID string) (numTeams int, maxSkillGap float64, err error) {
+	options := lastTeamsOptions[guildID]
+	options.mutex.Lock()
+	defer options.mutex.Unlock()
+	return options.getOptions()
+}
+
+func (t *teamsOptions) updateOptions(numTeams int, maxSkillGap float64) {
+	t.isSet = true
+	t.numTeams = numTeams
+	t.maxSkillGap = maxSkillGap
+}
+
+func (t *teamsOptions) getOptions() (numTeams int, maxSkillGap float64, err error) {
+	if !t.isSet {
+		return 0, 0, errors.New("teams has not yet been called")
+	}
+	return t.numTeams, t.maxSkillGap, nil
 }

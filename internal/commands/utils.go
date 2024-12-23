@@ -43,7 +43,7 @@ func getUserNames(serverID string, userIDs []string, session *dg.Session) ([]str
 	switch len(missingIDs) {
 	case 0:
 	case 1:
-		for id, _ := range missingIDs {
+		for id := range missingIDs {
 			member, err := session.GuildMember(serverID, id)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get user info: %w", err)
@@ -93,4 +93,9 @@ func getNumPlayingString(serverID string) (string, error) {
 		return "", nil
 	}
 	return fmt.Sprintf("\n%d in playing group", numPlaying), nil
+}
+
+func SetServerIDs(serverIDs []string) {
+	setPlayersAndPlayingServerIDs(serverIDs)
+	setLastTeamsOptionsServerIDs(serverIDs)
 }

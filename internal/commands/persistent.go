@@ -22,7 +22,7 @@ var players map[string]*persistentObject[map[string]Player]
 var playing map[string]*persistentObject[map[string]struct{}]
 
 // initializes the players and playing persistentObject variables for each server being serviced
-func SetServerIDs(serverIDs []string) {
+func setPlayersAndPlayingServerIDs(serverIDs []string) {
 	players = make(map[string]*persistentObject[map[string]Player], len(serverIDs))
 	playing = make(map[string]*persistentObject[map[string]struct{}], len(serverIDs))
 	for _, serverID := range serverIDs {

@@ -46,6 +46,8 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 		cmdUpdateNames(s, i)
 	case "teams":
 		cmdTeams(s, i)
+	case "redo":
+		cmdRedoTeams(s, i)
 	}
 }
 
@@ -882,11 +884,15 @@ var CommandList = []*dg.ApplicationCommand{
 			},
 			{
 				Name:        "max_skill_gap",
-				Description: "The largest allowable skill gap between the strongest and weakest created teams, defaults to 20",
+				Description: "The largest allowable skill gap between the strongest and weakest created teams, defaults to 5",
 				Type:        dg.ApplicationCommandOptionInteger,
 				Required:    false,
 			},
 		},
+	},
+	{
+		Name:        "redo",
+		Description: "Create teams in the same way as the last call to /teams",
 	},
 	{
 		Name:        "update_names",
