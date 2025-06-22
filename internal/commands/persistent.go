@@ -204,7 +204,7 @@ func deleteUsers(serverID string, userIDs []string) error {
 	// ensure the guest is deleted from the playing group as well if they are in it.
 	playing[serverID].Lock()
 	defer playing[serverID].Unlock()
-	if err := players[serverID].Load(); err != nil {
+	if err := playing[serverID].Load(); err != nil {
 		return err
 	}
 
