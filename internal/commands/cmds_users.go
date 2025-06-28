@@ -9,10 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdLastActive(session *dg.Session, interaction *dg.InteractionCreate) {
-	rsp.InteractionRespond(session, interaction, "Not yet implemented")
-}
-
 func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {

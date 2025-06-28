@@ -40,8 +40,6 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 		cmdSkill(s, i)
 	case "guest":
 		cmdGuest(s, i)
-	case "last_active":
-		cmdLastActive(s, i)
 	case "update_names":
 		cmdUpdateNames(s, i)
 	case "teams":
@@ -856,18 +854,6 @@ var CommandList = []*dg.ApplicationCommand{
 						},
 					},
 				},
-			},
-		},
-	},
-	{
-		Name:        "last_active",
-		Description: "Print the last time a user was active",
-		Options: []*dg.ApplicationCommandOption{
-			{
-				Name:        "player",
-				Description: "User whose last activity time information will be shown",
-				Type:        dg.ApplicationCommandOptionUser,
-				Required:    true,
 			},
 		},
 	},
