@@ -5,7 +5,6 @@ package commands
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	rsp "github.com/philflip12/spikebot/internal/responder"
@@ -343,15 +342,11 @@ func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	guestList := []Player{}
-	longestName := 0
 	for userID, player := range players {
 		if userID[0] != 'g' {
 			continue
 		}
 		guestList = append(guestList, player)
-		if len(player.Name) > longestName {
-			longestName = len(player.Name)
-		}
 	}
 
 	sort.Slice(guestList, func(i, j int) bool {
@@ -360,7 +355,7 @@ func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	str := "All Guests:\n```"
 	for _, player := range guestList {
-		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
+		str = fmt.Sprintf("%s\n%d %s", str, player.Skill, player.Name)
 	}
 	str = fmt.Sprintf("%s\n```", str)
 
