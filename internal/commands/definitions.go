@@ -149,7 +149,7 @@ var CommandList = []*dg.ApplicationCommand{
 			},
 			{
 				Name:        "guest",
-				Description: "f",
+				Description: "Guest variations of skill commands",
 				Type:        dg.ApplicationCommandOptionSubCommandGroup,
 				Options: []*dg.ApplicationCommandOption{
 					{
@@ -550,7 +550,7 @@ var CommandList = []*dg.ApplicationCommand{
 			},
 			{
 				Name:        "guest",
-				Description: "f",
+				Description: "Guest variations of playing commands",
 				Type:        dg.ApplicationCommandOptionSubCommandGroup,
 				Options: []*dg.ApplicationCommandOption{
 					{
@@ -900,11 +900,11 @@ var CommandList = []*dg.ApplicationCommand{
 	},
 	{
 		Name:        "guest",
-		Description: "Guest variations of other commands",
+		Description: "Commands for managing guests",
 		Options: []*dg.ApplicationCommandOption{
 			{
-				Name:        "add",
-				Description: "Add a new guest with a name and skill rank",
+				Name:        "create",
+				Description: "Create a new guest with a name and skill rank",
 				Type:        dg.ApplicationCommandOptionSubCommand,
 				Options: []*dg.ApplicationCommandOption{
 					{
@@ -924,8 +924,8 @@ var CommandList = []*dg.ApplicationCommand{
 				},
 			},
 			{
-				Name:        "remove",
-				Description: "Remove guest",
+				Name:        "delete",
+				Description: "Delete guest",
 				Type:        dg.ApplicationCommandOptionSubCommand,
 				Options: []*dg.ApplicationCommandOption{
 					{
@@ -987,8 +987,8 @@ playing
 		add
 		remove
 guest
-	add
-	remove
+	create
+	delete
 	rename
 	show_all
 teams
