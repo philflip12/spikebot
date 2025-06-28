@@ -30,9 +30,9 @@ func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
 		subCommandName := options[0].Name
 		switch subCommandName {
 		case "add":
-			addGuestToPlaying(session, interaction)
+			addGuestsToPlaying(session, interaction)
 		case "remove":
-			removeGuestFromPlaying(session, interaction)
+			removeGuestsFromPlaying(session, interaction)
 		}
 	}
 }

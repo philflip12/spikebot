@@ -128,7 +128,7 @@ func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "Renamed guest %q to %q", player.Name, newName)
 }
 
-func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleIDs := make([]string, len(options))
 	for i := range options {
@@ -181,7 +181,7 @@ func addGuestToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func removeGuestFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func removeGuestsFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleIDs := make([]string, len(options))
 	for i := range options {
