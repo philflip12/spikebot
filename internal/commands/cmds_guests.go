@@ -61,11 +61,19 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if skill == -1 {
-		rsp.InteractionRespondf(session, interaction, "Created guest %q", guestName)
-	} else {
-		rsp.InteractionRespondf(session, interaction, "Created guest %q with skill rank %d", guestName, skill)
+	response := fmt.Sprintf("Created guest %q", guestName)
+	if skill != -1 {
+		response = fmt.Sprintf("%s with skill rank %d", response, skill)
 	}
+
+	if err := addPlayingUsers(interaction.GuildID, guestID); err != nil {
+		errStr := fmt.Sprintf("%s\nEncountered error adding guest %q to playing group: %v", response, guestName, err)
+		log.Error(errStr)
+		rsp.InteractionRespond(session, interaction, errStr)
+		return
+	}
+
+	rsp.InteractionRespondf(session, interaction, "%s\nAdded guest %q to playing group", response, guestName)
 }
 
 func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate) {
