@@ -189,9 +189,9 @@ func (teams *Teams) String() string {
 
 	teamsStr := "```"
 	for teamIdx, team := range teams.teams {
-		teamsStr = fmt.Sprintf("%s\n%.2f %s Team %d", teamsStr, team.skill, strings.Repeat(".", longestName+1), teamIdx+1)
+		teamsStr = fmt.Sprintf("%s\nTeam %d %s %.2f", teamsStr, teamIdx+1, strings.Repeat(".", longestName+1), team.skill)
 		for _, teammate := range team.players {
-			teamsStr = fmt.Sprintf("%s\n\t %d %s", teamsStr, teammate.Skill, teammate.Name)
+			teamsStr = fmt.Sprintf("%s\n\t%s%s  %d", teamsStr, teammate.Name, strings.Repeat(" ", longestName-len(teammate.Name)), teammate.Skill)
 		}
 	}
 	teamsStr = fmt.Sprintf("%s\n```", teamsStr)
