@@ -140,6 +140,7 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	if len(players) == 0 {
 		rsp.InteractionRespond(session, interaction, "The playing group is empty")
+		return
 	}
 	str := fmt.Sprintf("%d in playing group:\n```", len(players))
 	for _, player := range players {
