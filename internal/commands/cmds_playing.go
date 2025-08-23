@@ -5,7 +5,6 @@ package commands
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	dg "github.com/bwmarrin/discordgo"
 	rsp "github.com/philflip12/spikebot/internal/responder"
@@ -135,25 +134,16 @@ func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	playerList := make([]Player, 0, len(players))
-	longestName := 0
-	for _, player := range players {
-		playerList = append(playerList, player)
-		if len(player.Name) > longestName {
-			longestName = len(player.Name)
-		}
-	}
-
-	sort.Slice(playerList, func(i, j int) bool {
-		return playerList[i].Skill > playerList[j].Skill
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].Skill > players[j].Skill
 	})
 
-	if len(playerList) == 0 {
+	if len(players) == 0 {
 		rsp.InteractionRespond(session, interaction, "The playing group is empty")
 	}
-	str := fmt.Sprintf("%d in playing group:\n```", len(playerList))
-	for _, player := range playerList {
-		str = fmt.Sprintf("%s\n%s%s  %d", str, player.Name, strings.Repeat(" ", longestName-len(player.Name)), player.Skill)
+	str := fmt.Sprintf("%d in playing group:\n```", len(players))
+	for _, player := range players {
+		str = fmt.Sprintf("%s\n%2d %s", str, player.Skill, player.Name)
 	}
 	str = fmt.Sprintf("%s\n```", str)
 

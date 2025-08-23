@@ -370,7 +370,7 @@ func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	str := "All Guests:\n```"
 	for _, player := range guestList {
-		str = fmt.Sprintf("%s\n%d %s", str, player.Skill, player.Name)
+		str = fmt.Sprintf("%s\n%2d %s", str, player.Skill, player.Name)
 	}
 	str = fmt.Sprintf("%s\n```", str)
 
