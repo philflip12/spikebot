@@ -67,13 +67,20 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	if err := addPlayingUsers(interaction.GuildID, guestID); err != nil {
+		log.Error(err)
 		errStr := fmt.Sprintf("%s\nEncountered error adding guest %q to playing group: %v", response, guestName, err)
-		log.Error(errStr)
 		rsp.InteractionRespond(session, interaction, errStr)
 		return
 	}
 
-	rsp.InteractionRespondf(session, interaction, "%s\nAdded guest %q to playing group", response, guestName)
+	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		rsp.InteractionRespondf(session, interaction, "%s\nEncountered error getting playing group size", response)
+		return
+	}
+
+	rsp.InteractionRespondf(session, interaction, "%s\nAdded guest %q to playing group%s", response, guestName, numPlayingStr)
 }
 
 func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate) {
