@@ -75,7 +75,7 @@ var CommandList = []*dg.ApplicationCommand{{
 			Type:        dg.ApplicationCommandOptionInteger,
 			Required:    true,
 			MinValue:    ptr(float64(0)),
-			MaxValue:    100,
+			MaxValue:    99,
 		}},
 	}, {
 		Name:        "increase",
@@ -92,7 +92,7 @@ var CommandList = []*dg.ApplicationCommand{{
 			Type:        dg.ApplicationCommandOptionInteger,
 			Required:    true,
 			MinValue:    ptr(float64(1)),
-			MaxValue:    100,
+			MaxValue:    99,
 		}},
 	}, {
 		Name:        "decrease",
@@ -109,7 +109,7 @@ var CommandList = []*dg.ApplicationCommand{{
 			Type:        dg.ApplicationCommandOptionInteger,
 			Required:    true,
 			MinValue:    ptr(float64(1)),
-			MaxValue:    100,
+			MaxValue:    99,
 		}},
 	}, {
 		Name:        "show",
@@ -144,7 +144,7 @@ var CommandList = []*dg.ApplicationCommand{{
 				Type:        dg.ApplicationCommandOptionInteger,
 				Required:    true,
 				MinValue:    ptr(float64(0)),
-				MaxValue:    float64(100),
+				MaxValue:    99,
 			}},
 		}, {
 			Name:        "increase",
@@ -161,7 +161,7 @@ var CommandList = []*dg.ApplicationCommand{{
 				Type:        dg.ApplicationCommandOptionInteger,
 				Required:    true,
 				MinValue:    ptr(float64(0)),
-				MaxValue:    float64(100),
+				MaxValue:    99,
 			}},
 		}, {
 			Name:        "decrease",
@@ -178,7 +178,7 @@ var CommandList = []*dg.ApplicationCommand{{
 				Type:        dg.ApplicationCommandOptionInteger,
 				Required:    true,
 				MinValue:    ptr(float64(0)),
-				MaxValue:    float64(100),
+				MaxValue:    99,
 			}},
 		}, {
 			Name:        "show",
@@ -748,7 +748,7 @@ var CommandList = []*dg.ApplicationCommand{{
 			Type:        dg.ApplicationCommandOptionInteger,
 			Required:    true,
 			MinValue:    ptr(float64(0)),
-			MaxValue:    float64(100),
+			MaxValue:    99,
 		}},
 	}, {
 		Name:        "delete",

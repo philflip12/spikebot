@@ -330,8 +330,8 @@ func modifyPlayerSkill(serverID string, userID string, diff int) (prev, new int,
 	if player, ok := players[serverID].object[userID]; ok {
 		prev = player.Skill
 		player.Skill += diff
-		if player.Skill > 100 {
-			player.Skill = 100
+		if player.Skill > 99 {
+			player.Skill = 99
 		} else if player.Skill < 0 {
 			player.Skill = 0
 		}

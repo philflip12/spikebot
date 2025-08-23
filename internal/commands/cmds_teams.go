@@ -114,7 +114,7 @@ func createTeams(
 		})
 
 		maxAverage := float64(0)
-		minAverage := float64(100)
+		minAverage := float64(99)
 		playerIdx := 0
 		for teamIdx := 0; teamIdx < numTeams; teamIdx++ {
 			sum := 0
