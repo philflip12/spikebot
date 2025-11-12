@@ -44,6 +44,10 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 		cmdGuest(s, i)
 	case "update_names":
 		cmdUpdateNames(s, i)
+	case "sign":
+		cmdSign(s, i, true)
+	case "unsign":
+		cmdSign(s, i, false)
 	case "teams":
 		cmdTeams(s, i)
 	case "redo":
@@ -117,6 +121,12 @@ var (
 		Required:    true,
 		MinValue:    ptr(float64(1)),
 		MaxValue:    99,
+	}
+	signedOption = &dg.ApplicationCommandOption{
+		Name:        "signed",
+		Description: "Whether or not the guest has signed",
+		Type:        dg.ApplicationCommandOptionBoolean,
+		Required:    false,
 	}
 )
 
@@ -275,6 +285,7 @@ var CommandList = []*dg.ApplicationCommand{{
 				Required:    true,
 			},
 			skillOption,
+			signedOption,
 		},
 	}, {
 		Name:        "delete",
@@ -299,10 +310,28 @@ var CommandList = []*dg.ApplicationCommand{{
 			Required:    true,
 		}},
 	}, {
+		Name:        "sign",
+		Description: "Mark guests as having signed",
+		Type:        dg.ApplicationCommandOptionSubCommand,
+		Options:     multiGuestSelectOptions(24),
+	}, {
+		Name:        "unsign",
+		Description: "Mark the guest as not having signed",
+		Type:        dg.ApplicationCommandOptionSubCommand,
+		Options:     multiGuestSelectOptions(24),
+	}, {
 		Name:        "show_all",
 		Description: "Display all guests and their skill ranks",
 		Type:        dg.ApplicationCommandOptionSubCommand,
 	}},
+}, {
+	Name:        "sign",
+	Description: "Mark the player as having signed",
+	Options:     multiMemberSelectOptions(24),
+}, {
+	Name:        "unsign",
+	Description: "Mark the player as not having signed",
+	Options:     multiMemberSelectOptions(24),
 }}
 
 const helpMessage = "Spike Command Options:\n" +
@@ -331,7 +360,11 @@ guest
 	create
 	delete
 	rename
+	sign
+	unsign
 	show_all
+sign
+unsign
 teams
 update_names
 ` + "```"

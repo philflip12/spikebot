@@ -117,8 +117,9 @@ func (p *persistentObject[T]) Save() error {
 }
 
 type Player struct {
-	Name  string `json:"name"`
-	Skill int    `json:"skill"`
+	Name   string `json:"name"`
+	Skill  int    `json:"skill"`
+	Signed bool   `json:"signed"`
 }
 
 func loadUserName(serverID string, userID string) (string, bool, error) {
@@ -146,8 +147,9 @@ func saveUserName(serverID string, userID string, name string) error {
 		return nil
 	}
 	players[serverID].object[userID] = Player{
-		Name:  name,
-		Skill: -1,
+		Name:   name,
+		Skill:  -1,
+		Signed: false,
 	}
 	return players[serverID].Save()
 }
@@ -341,6 +343,22 @@ func modifyPlayerSkill(serverID string, userID string, diff int) (prev, new int,
 	return prev, new, players[serverID].Save()
 }
 
+func updatePlayerSignatures(serverID string, userIDs []string, signed bool) error {
+	players[serverID].Lock()
+	defer players[serverID].Unlock()
+	if err := players[serverID].Load(); err != nil {
+		return err
+	}
+
+	for i := range userIDs {
+		player := players[serverID].object[userIDs[i]]
+		player.Signed = signed
+		players[serverID].object[userIDs[i]] = player
+	}
+
+	return players[serverID].Save()
+}
+
 func getPlayer(serverID string, userID string) (Player, bool, error) {
 	players[serverID].Lock()
 	defer players[serverID].Unlock()
@@ -385,7 +403,7 @@ func updatePlayerNames(serverID string, nameMap map[string]string) error {
 	return players[serverID].Save()
 }
 
-func saveGuest(serverID, guestID, guestName string, skill int) error {
+func saveGuest(serverID, guestID, guestName string, skill int, signed bool) error {
 	players[serverID].Lock()
 	defer players[serverID].Unlock()
 	if err := players[serverID].Load(); err != nil {
@@ -397,8 +415,9 @@ func saveGuest(serverID, guestID, guestName string, skill int) error {
 	}
 
 	players[serverID].object[guestID] = Player{
-		Name:  guestName,
-		Skill: skill,
+		Name:   guestName,
+		Skill:  skill,
+		Signed: signed,
 	}
 
 	return players[serverID].Save()

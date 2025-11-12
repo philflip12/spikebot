@@ -48,24 +48,8 @@ func cmdTeamsSubCall(session *dg.Session, interaction *dg.InteractionCreate, num
 		return
 	}
 
-	if len(players) < numTeams {
-		rsp.InteractionRespondf(session, interaction, "%d players not enough to make %d teams", len(players), numTeams)
-		return
-	}
-
-	// ensure that all playing users have a skill rank set
-	unsetPlayers := []string{}
-	for _, player := range players {
-		if player.Skill == -1 {
-			unsetPlayers = append(unsetPlayers, player.Name)
-		}
-	}
-	if len(unsetPlayers) > 0 {
-		str := "Playing users with ranks undefined:"
-		for _, name := range unsetPlayers {
-			str = fmt.Sprintf("%s\n\t%s", str, name)
-		}
-		rsp.InteractionRespond(session, interaction, str)
+	if err := validateTeams(players, numTeams); err != nil {
+		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
@@ -239,4 +223,40 @@ func (t *teamsOptions) getOptions() (numTeams int, maxSkillGap float64, err erro
 		return 0, 0, errors.New("teams has not yet been called")
 	}
 	return t.numTeams, t.maxSkillGap, nil
+}
+
+// Ensure that all playing users have a skill rank set and have signed
+func validateTeams(players []Player, numTeams int) error {
+	noSkill := []string{}
+	noSign := []string{}
+	for _, player := range players {
+		if player.Skill == -1 {
+			noSkill = append(noSkill, player.Name)
+		}
+		if !player.Signed {
+			noSign = append(noSign, player.Name)
+		}
+	}
+	errStr := ""
+	if len(noSkill) > 0 {
+		errStr = fmt.Sprintf("%sPlayers with undefined skill:\n", errStr)
+		for _, name := range noSkill {
+			errStr = fmt.Sprintf("%s\t%s\n", errStr, name)
+		}
+	}
+	if len(noSign) > 0 {
+		errStr = fmt.Sprintf("%sPlayers without signature:\n", errStr)
+		for _, name := range noSign {
+			errStr = fmt.Sprintf("%s\t%s\n", errStr, name)
+		}
+	}
+	if len(errStr) != 0 {
+		return errors.New(errStr)
+	}
+
+	if len(players) < numTeams {
+		return fmt.Errorf("%d players not enough to make %d teams", len(players), numTeams)
+	}
+
+	return nil
 }

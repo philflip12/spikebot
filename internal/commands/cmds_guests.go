@@ -22,6 +22,10 @@ func cmdGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		deleteGuest(session, interaction)
 	case "rename":
 		renameGuest(session, interaction)
+	case "sign":
+		setGuestSignature(session, interaction, true)
+	case "unsign":
+		setGuestSignature(session, interaction, false)
 	case "show_all":
 		showAllGuests(session, interaction)
 	}
@@ -31,6 +35,10 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	guestName := options[0].StringValue()
 	skill := int(options[1].IntValue())
+	signed := false
+	if len(options) >= 3 {
+		signed = options[2].BoolValue()
+	}
 
 	players, err := getPlayers(interaction.GuildID)
 	if err != nil {
@@ -55,7 +63,7 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 	guestID := "g" + role.ID
 
-	if err := saveGuest(interaction.GuildID, guestID, guestName, skill); err != nil {
+	if err := saveGuest(interaction.GuildID, guestID, guestName, skill, signed); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
@@ -141,6 +149,56 @@ func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	rsp.InteractionRespondf(session, interaction, "Renamed guest %q to %q", player.Name, newName)
+}
+
+func setGuestSignature(session *dg.Session, interaction *dg.InteractionCreate, signed bool) {
+	options := interaction.ApplicationCommandData().Options[0].Options
+	roleIDs := make([]string, len(options))
+	for i := range options {
+		roleIDs[i] = options[i].RoleValue(nil, "").ID
+	}
+
+	players, err := getPlayers(interaction.GuildID)
+	if err != nil {
+		log.Error(err)
+		rsp.InteractionRespondf(session, interaction, err.Error())
+		return
+	}
+	invalidRoles := []string{}
+	guestIDs := make([]string, 0, len(roleIDs))
+	for i := range roleIDs {
+		guestID := "g" + roleIDs[i]
+		if _, ok := players[guestID]; !ok {
+			invalidRoles = append(invalidRoles, roleIDs[i])
+		} else {
+			guestIDs = append(guestIDs, guestID)
+		}
+	}
+
+	err = updatePlayerSignatures(interaction.GuildID, guestIDs, signed)
+	if err != nil {
+		log.Error(err)
+		rsp.InteractionRespondf(session, interaction, err.Error())
+		return
+	}
+
+	response := ""
+	if len(invalidRoles) != 0 {
+		response = "One or more roles did not represent a guest\n\n"
+	}
+	action := "having signed"
+	if !signed {
+		action = "not having signed"
+	}
+	if len(guestIDs) == 1 {
+		response = fmt.Sprintf("%sMarked guest %q as %s", response, players[guestIDs[0]].Name, action)
+	} else if len(guestIDs) > 1 {
+		response = fmt.Sprintf("%sMarked guests as %s:", response, action)
+		for _, id := range guestIDs {
+			response = fmt.Sprintf("%s\n\t%s", response, players[id].Name)
+		}
+	}
+	rsp.InteractionRespond(session, interaction, response)
 }
 
 func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
