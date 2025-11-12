@@ -22,6 +22,7 @@ func cmdRedoTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 	numTeams, maxSkillGap, err := getLastTeamsOptions(interaction.GuildID)
 	if err != nil {
 		rsp.InteractionRespond(session, interaction, err.Error())
+		return
 	}
 
 	cmdTeamsSubCall(session, interaction, numTeams, maxSkillGap)
