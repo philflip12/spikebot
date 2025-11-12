@@ -4,6 +4,8 @@ package commands
 // registered on the discord server at startup.
 
 import (
+	"fmt"
+
 	dg "github.com/bwmarrin/discordgo"
 	rsp "github.com/philflip12/spikebot/internal/responder"
 )
@@ -49,7 +51,76 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 	}
 }
 
-// func OnInteractionEvent(s *dg.Session, m *dg.InteractionCreate)
+var (
+	memberOption = &dg.ApplicationCommandOption{
+		Name:        "name",
+		Description: "Name of the member in the server",
+		Type:        dg.ApplicationCommandOptionUser,
+		Required:    true,
+	}
+	memberOptionNumber = func(number int) *dg.ApplicationCommandOption {
+		return &dg.ApplicationCommandOption{
+			Name:        fmt.Sprintf("name_%d", number),
+			Description: "Name of a member in the server",
+			Type:        dg.ApplicationCommandOptionUser,
+			Required:    number == 1,
+		}
+	}
+	multiMemberSelectOptions = func(count int) []*dg.ApplicationCommandOption {
+		options := make([]*dg.ApplicationCommandOption, count)
+		for i := 1; i <= count; i++ {
+			options[i-1] = memberOptionNumber(i)
+		}
+		return options
+	}
+	guestOption = &dg.ApplicationCommandOption{
+		Name:        "name",
+		Description: "Name of the guest",
+		Type:        dg.ApplicationCommandOptionRole,
+		Required:    true,
+	}
+	guestOptionNumber = func(number int) *dg.ApplicationCommandOption {
+		return &dg.ApplicationCommandOption{
+			Name:        fmt.Sprintf("name_%d", number),
+			Description: "Name of a guest",
+			Type:        dg.ApplicationCommandOptionRole,
+			Required:    number == 1,
+		}
+	}
+	multiGuestSelectOptions = func(count int) []*dg.ApplicationCommandOption {
+		options := make([]*dg.ApplicationCommandOption, count)
+		for i := 1; i <= count; i++ {
+			options[i-1] = guestOptionNumber(i)
+		}
+		return options
+	}
+	skillOption = &dg.ApplicationCommandOption{
+		Name:        "skill",
+		Description: "Skill rank to set",
+		Type:        dg.ApplicationCommandOptionInteger,
+		Required:    true,
+		MinValue:    ptr(float64(0)),
+		MaxValue:    99,
+	}
+	increaseOption = &dg.ApplicationCommandOption{
+		Name:        "amount",
+		Description: "Amount by which to increase",
+		Type:        dg.ApplicationCommandOptionInteger,
+		Required:    true,
+		MinValue:    ptr(float64(1)),
+		MaxValue:    99,
+	}
+	decreaseOption = &dg.ApplicationCommandOption{
+		Name:        "amount",
+		Description: "Amount by which to decrease",
+		Type:        dg.ApplicationCommandOptionInteger,
+		Required:    true,
+		MinValue:    ptr(float64(1)),
+		MaxValue:    99,
+	}
+)
+
+// func OnInteractionEvent(s *dg.Session, m *dg.InteractionCreate, ...)
 
 var CommandList = []*dg.ApplicationCommand{{
 	Name:        "help",
@@ -64,66 +135,36 @@ var CommandList = []*dg.ApplicationCommand{{
 		Name:        "set",
 		Description: "Overwrite the skill rank of a player",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "User whose rank will be set",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}, {
-			Name:        "skill",
-			Description: "New skill rank to set",
-			Type:        dg.ApplicationCommandOptionInteger,
-			Required:    true,
-			MinValue:    ptr(float64(0)),
-			MaxValue:    99,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			memberOption,
+			skillOption,
+		},
 	}, {
 		Name:        "increase",
 		Description: "Increase the skill rank of a player",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "User whose skill rank will be increased",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}, {
-			Name:        "amount",
-			Description: "The amount by which to increase the skill rank",
-			Type:        dg.ApplicationCommandOptionInteger,
-			Required:    true,
-			MinValue:    ptr(float64(1)),
-			MaxValue:    99,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			memberOption,
+			increaseOption,
+		},
 	}, {
 		Name:        "decrease",
 		Description: "Decrease the skill rank of a player",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "User whose rank will be decreased",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}, {
-			Name:        "amount",
-			Description: "The amount by which to decrease the skill rank",
-			Type:        dg.ApplicationCommandOptionInteger,
-			Required:    true,
-			MinValue:    ptr(float64(1)),
-			MaxValue:    99,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			memberOption,
+			decreaseOption,
+		},
 	}, {
 		Name:        "show",
-		Description: "Display the current skill rank of a player",
+		Description: "Display the skill rank of a player",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "User whose rank will be shown",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			memberOption,
+		},
 	}, {
 		Name:        "show_all",
-		Description: "Display the current skill rank of all players",
+		Description: "Display the skill rank of all players",
 		Type:        dg.ApplicationCommandOptionSubCommand,
 	}, {
 		Name:        "guest",
@@ -133,63 +174,32 @@ var CommandList = []*dg.ApplicationCommand{{
 			Name:        "set",
 			Description: "Set the skill rank of a guest",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "player",
-				Description: "The name of the guest whose skill will be set",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "skill",
-				Description: "The skill rank to which the guest will be set",
-				Type:        dg.ApplicationCommandOptionInteger,
-				Required:    true,
-				MinValue:    ptr(float64(0)),
-				MaxValue:    99,
-			}},
+			Options: []*dg.ApplicationCommandOption{
+				guestOption,
+				skillOption,
+			},
 		}, {
 			Name:        "increase",
 			Description: "Increase the skill rank of a guest",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "player",
-				Description: "The name of the guest whose skill will be increased",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "amount",
-				Description: "The amount by which to increase the skill rank",
-				Type:        dg.ApplicationCommandOptionInteger,
-				Required:    true,
-				MinValue:    ptr(float64(0)),
-				MaxValue:    99,
-			}},
+			Options: []*dg.ApplicationCommandOption{
+				guestOption,
+				increaseOption,
+			},
 		}, {
 			Name:        "decrease",
 			Description: "Decrease the skill rank of a guest",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "player",
-				Description: "The name of the guest whose skill will be decreased",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "amount",
-				Description: "The amount by which to decrease the skill rank",
-				Type:        dg.ApplicationCommandOptionInteger,
-				Required:    true,
-				MinValue:    ptr(float64(0)),
-				MaxValue:    99,
-			}},
+			Options: []*dg.ApplicationCommandOption{
+				guestOption,
+				decreaseOption,
+			},
 		}, {
 			Name:        "show",
-			Description: "Display the current skill rank of a guest",
+			Description: "Display the skill rank of a guest",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "player",
-				Description: "Guest whose rank will be shown",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}},
+			Options: []*dg.ApplicationCommandOption{
+				guestOption},
 		}},
 	}},
 }, {
@@ -197,254 +207,14 @@ var CommandList = []*dg.ApplicationCommand{{
 	Description: "Commads relating to the list of active players",
 	Options: []*dg.ApplicationCommandOption{{
 		Name:        "add",
-		Description: "Add a player to the list of active players",
+		Description: "Add players to the list of active players",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player_1",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}, {
-			Name:        "player_2",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_3",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_4",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_5",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_6",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_7",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_8",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_9",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_10",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_11",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_12",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_13",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_14",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_15",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_16",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_17",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_18",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_19",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_20",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_21",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_22",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_23",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_24",
-			Description: "User to add to the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}},
+		Options:     multiMemberSelectOptions(24),
 	}, {
 		Name:        "remove",
-		Description: "Remove a player from the list of active players",
+		Description: "Remove players from the list of active players",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player_1",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    true,
-		}, {
-			Name:        "player_2",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_3",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_4",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_5",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_6",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_7",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_8",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_9",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_10",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_11",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_12",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_13",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_14",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_15",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_16",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_17",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_18",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_19",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_20",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_21",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_22",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_23",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}, {
-			Name:        "player_24",
-			Description: "User to remove from the playing group",
-			Type:        dg.ApplicationCommandOptionUser,
-			Required:    false,
-		}},
+		Options:     multiMemberSelectOptions(24),
 	}, {
 		Name:        "clear",
 		Description: "Clear the list of active players",
@@ -459,254 +229,14 @@ var CommandList = []*dg.ApplicationCommand{{
 		Type:        dg.ApplicationCommandOptionSubCommandGroup,
 		Options: []*dg.ApplicationCommandOption{{
 			Name:        "add",
-			Description: "Add a guest to the playing group",
+			Description: "Add guests to the playing group",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "guest_1",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "guest_2",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_3",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_4",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_5",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_6",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_7",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_8",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_9",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_10",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_11",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_12",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_13",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_14",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_15",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_16",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_17",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_18",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_19",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_20",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_21",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_22",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_23",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_24",
-				Description: "Guest to add to the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}},
+			Options:     multiGuestSelectOptions(24),
 		}, {
 			Name:        "remove",
-			Description: "Remove a guest from the playing group",
+			Description: "Remove guests from the playing group",
 			Type:        dg.ApplicationCommandOptionSubCommand,
-			Options: []*dg.ApplicationCommandOption{{
-				Name:        "guest_1",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    true,
-			}, {
-				Name:        "guest_2",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_3",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_4",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_5",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_6",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_7",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_8",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_9",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_10",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_11",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_12",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_13",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_14",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_15",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_16",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_17",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_18",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_19",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_20",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_21",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_22",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_23",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}, {
-				Name:        "guest_24",
-				Description: "Guest to remove from the playing group",
-				Type:        dg.ApplicationCommandOptionRole,
-				Required:    false,
-			}},
+			Options:     multiGuestSelectOptions(24),
 		}},
 	}},
 }, {
@@ -735,42 +265,35 @@ var CommandList = []*dg.ApplicationCommand{{
 	Description: "Commands for managing guests",
 	Options: []*dg.ApplicationCommandOption{{
 		Name:        "create",
-		Description: "Create a new guest with a name and skill rank",
+		Description: "Create a new guest",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "The name of the guest to add",
-			Type:        dg.ApplicationCommandOptionString,
-			Required:    true,
-		}, {
-			Name:        "skill",
-			Description: "The skill rank of the guest to add",
-			Type:        dg.ApplicationCommandOptionInteger,
-			Required:    true,
-			MinValue:    ptr(float64(0)),
-			MaxValue:    99,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			{
+				Name:        "name",
+				Description: "The name of the guest",
+				Type:        dg.ApplicationCommandOptionString,
+				Required:    true,
+			},
+			skillOption,
+		},
 	}, {
 		Name:        "delete",
 		Description: "Delete guest",
 		Type:        dg.ApplicationCommandOptionSubCommand,
-		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
-			Description: "The name of the guest to remove",
-			Type:        dg.ApplicationCommandOptionRole,
-			Required:    true,
-		}},
+		Options: []*dg.ApplicationCommandOption{
+			guestOption,
+		},
 	}, {
 		Name:        "rename",
 		Description: "Change the name of a guest",
 		Type:        dg.ApplicationCommandOptionSubCommand,
 		Options: []*dg.ApplicationCommandOption{{
-			Name:        "player",
+			Name:        "old_name",
 			Description: "Guest whose name will be changed",
 			Type:        dg.ApplicationCommandOptionRole,
 			Required:    true,
 		}, {
-			Name:        "name",
+			Name:        "new_name",
 			Description: "The new name to be assigned to the guest",
 			Type:        dg.ApplicationCommandOptionString,
 			Required:    true,
