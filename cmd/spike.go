@@ -13,6 +13,7 @@ import (
 	dg "github.com/bwmarrin/discordgo"
 	cmds "github.com/philflip12/spikebot/internal/commands"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -45,6 +46,8 @@ type programArgs struct {
 }
 
 func main() {
+	// Try to enable colored printing to terminal
+	enableTerminalColor()
 	// Set the logrus logging formatter
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     true,
@@ -70,7 +73,8 @@ func main() {
 	// Remove all registered commands from the servers when spike stops running.
 	defer spike.deregisterCommands()
 
-	log.Info("Spike is now running. Press CTRL-C to exit")
+	fmt.Print(spikeAscii)
+	log.Info("Press CTRL-C to stop Spike")
 
 	waitForKillSig()
 	log.Info("Closing Spike")
@@ -244,3 +248,43 @@ func waitForKillSig() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
 	<-sc
 }
+
+func enableTerminalColor() {
+	handle := windows.Handle(os.Stdout.Fd())
+	var mode uint32
+	if windows.GetConsoleMode(handle, &mode) == nil {
+		mode |= windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+		windows.SetConsoleMode(handle, mode)
+	}
+}
+
+// Colors
+var (
+	white    = "\x1b[0m"
+	gradient = []string{
+		"\x1b[38;2;255;30;15m",
+		"\x1b[38;2;253;40;15m",
+		"\x1b[38;2;251;50;15m",
+		"\x1b[38;2;249;60;15m",
+		"\x1b[38;2;247;70;15m",
+		"\x1b[38;2;245;80;15m",
+		"\x1b[38;2;243;90;15m",
+		"\x1b[38;2;241;100;15m",
+		"\x1b[38;2;239;110;15m",
+		"\x1b[38;2;237;120;15m",
+	}
+)
+
+var spikeAscii = `
+` + gradient[0] + `         @@@@@@             @@@@@@   @@@@@@@   @@@  @@@  @@@  @@@@@@@@            @@@@@@
+` + gradient[1] + `     @@@    @@  @@@        @@@@@@@   @@@@@@@@  @@@  @@@  @@@  @@@@@@@@        @@@    @@  @@@
+` + gradient[2] + `   @@   @@    @@   @@      !@@       @@!  @@@  @@!  @@!  !@@  @@!           @@   @@    @@   @@
+` + gradient[3] + `  @    @@ @@    @@   @     !@!       !@!  @!@  !@!  !@!  @!!  !@!          @    @@ @@    @@   @
+` + gradient[4] + ` @   @@    @@@    @   @    !!@@!!    @!@@!@!   !!@  @!@@!@!   @!!!:!      @   @@    @@@    @   @
+` + gradient[5] + ` @  @    @@   @@@  @  @     !!@!!!   !!@!!!    !!!  !!@!!!    !!!!!:      @  @    @@   @@@  @  @
+` + gradient[6] + `  @@    @@@      @@@@@          !:!  !!:       !!:  !!: :!!   !!:          @@    @@@      @@@@@
+` + gradient[7] + `   @@  @   @@@     @@          !:!   :!:       :!:  :!:  !:!  :!:           @@  @   @@@     @@
+` + gradient[8] + `     @@@      @@@@@        :::: ::    ::        ::   ::  :::   :: ::::        @@@      @@@@@
+` + gradient[9] + `         @@@@@@            :: : :     :        :     :   :::  : :: ::             @@@@@@
+` + white + `
+`
