@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	logTimeStampFmt       = "06-01-02 3:04:05 pm" // YY-MM-DD HH:MM:SS pm
+	logTimeStampFmt       = "06-01-02 15:04:05" // YYMMDD HH:MM:SS
 	defaultBotTokenPath   = "./.env/BotToken"
 	defaultServerIDsPath  = "./.env/ServerIDs"
 	defaultChannelIDsPath = "./.env/ChannelIDs"
@@ -180,6 +181,23 @@ type spikeSession struct {
 
 // Connects to the discord server and starts spike using the specified botToken
 func startSpikeSession(botToken string, serverIDs []string) *spikeSession {
+	// Configure the logging of discord go
+	dg.Logger = func(msgL, caller int, format string, a ...interface{}) {
+		// Start any logs from the Discord Go library with "[DG]"
+		format = fmt.Sprintf("[DG] %s", format)
+
+		switch msgL {
+		case dg.LogDebug:
+			log.Debugf(format, a...)
+		case dg.LogInformational:
+			log.Infof(format, a...)
+		case dg.LogWarning:
+			log.Warnf(format, a...)
+		case dg.LogError:
+			log.Errorf(format, a...)
+		}
+	}
+
 	// Create a new Discord session using the provided bot token.
 	session, err := dg.New("Bot " + botToken)
 	if err != nil {
