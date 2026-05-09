@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
-	players, err := getPlayers(interaction.GuildID)
+func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -36,9 +36,10 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 
 	// Save off the new names
-	if err := updatePlayerNames(interaction.GuildID, nameMap); err != nil {
+	if err := data.UpdatePlayerNames(nameMap); err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
+		return
 	}
 
 	responseString := "Updated the names of all tracked players"
@@ -52,9 +53,10 @@ func cmdUpdateNames(session *dg.Session, interaction *dg.InteractionCreate) {
 				removeList = append(removeList, userID)
 			}
 		}
-		if err := deleteUsers(interaction.GuildID, removeList); err != nil {
+		if err := data.DeleteUsers(removeList...); err != nil {
 			log.Error(err)
 			rsp.InteractionRespond(session, interaction, err.Error())
+			return
 		}
 
 		if len(removeList) > 0 {

@@ -18,17 +18,17 @@ import (
 const defaultTeamsMaxSkillGap = float64(1)
 const teamGenTimeLimit = 100 * time.Millisecond
 
-func cmdRedoTeams(session *dg.Session, interaction *dg.InteractionCreate) {
+func cmdRedoTeams(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	numTeams, maxSkillGap, err := getLastTeamsOptions(interaction.GuildID)
 	if err != nil {
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	cmdTeamsSubCall(session, interaction, numTeams, maxSkillGap)
+	cmdTeamsSubCall(session, interaction, data, numTeams, maxSkillGap)
 }
 
-func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
+func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options
 	numTeams := int(options[0].IntValue())
 	maxSkillGap := defaultTeamsMaxSkillGap
@@ -38,11 +38,11 @@ func cmdTeams(session *dg.Session, interaction *dg.InteractionCreate) {
 
 	updateLastTeamsOptions(interaction.GuildID, numTeams, maxSkillGap)
 
-	cmdTeamsSubCall(session, interaction, numTeams, maxSkillGap)
+	cmdTeamsSubCall(session, interaction, data, numTeams, maxSkillGap)
 }
 
-func cmdTeamsSubCall(session *dg.Session, interaction *dg.InteractionCreate, numTeams int, maxSkillGap float64) {
-	players, err := getPlaying(interaction.GuildID)
+func cmdTeamsSubCall(session *dg.Session, interaction *dg.InteractionCreate, data *serverData, numTeams int, maxSkillGap float64) {
+	players, err := data.GetPlaying()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())

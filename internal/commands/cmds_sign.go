@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdSign(session *dg.Session, interaction *dg.InteractionCreate, signed bool) {
+func cmdSign(session *dg.Session, interaction *dg.InteractionCreate, data *serverData, signed bool) {
 	options := interaction.ApplicationCommandData().Options
 	userIDs := make([]string, len(options))
 	for i := range options {
@@ -16,14 +16,14 @@ func cmdSign(session *dg.Session, interaction *dg.InteractionCreate, signed bool
 		userIDs[i] = options[i].UserValue(nil).ID
 	}
 
-	names, err := getUserNames(interaction.GuildID, userIDs, session)
+	names, err := getUserNames(data, interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	err = updatePlayerSignatures(interaction.GuildID, userIDs, signed)
+	err = data.UpdatePlayerSignatures(userIDs, signed)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())

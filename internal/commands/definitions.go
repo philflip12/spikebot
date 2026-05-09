@@ -8,6 +8,7 @@ import (
 
 	dg "github.com/bwmarrin/discordgo"
 	rsp "github.com/philflip12/spikebot/internal/responder"
+	log "github.com/sirupsen/logrus"
 )
 
 var channelMap map[string]struct{}
@@ -31,27 +32,35 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 		// Ignore commands sent from non-added channels
 		return
 	}
+
+	d, err := getPersistentServerData(s, i)
+	if err != nil {
+		log.Error(err)
+		rsp.InteractionRespond(s, i, err.Error())
+		return
+	}
+
 	switch i.ApplicationCommandData().Name {
 	case "help":
-		cmdHelp(s, i)
+		cmdHelp(s, i, d)
 	case "continue":
-		cmdContinue(s, i)
+		cmdContinue(s, i, d)
 	case "playing":
-		cmdPlay(s, i)
+		cmdPlay(s, i, d)
 	case "skill":
-		cmdSkill(s, i)
+		cmdSkill(s, i, d)
 	case "guest":
-		cmdGuest(s, i)
+		cmdGuest(s, i, d)
 	case "update_names":
-		cmdUpdateNames(s, i)
+		cmdUpdateNames(s, i, d)
 	case "sign":
-		cmdSign(s, i, true)
+		cmdSign(s, i, d, true)
 	case "unsign":
-		cmdSign(s, i, false)
+		cmdSign(s, i, d, false)
 	case "teams":
-		cmdTeams(s, i)
+		cmdTeams(s, i, d)
 	case "redo":
-		cmdRedoTeams(s, i)
+		cmdRedoTeams(s, i, d)
 	}
 }
 
@@ -369,11 +378,11 @@ teams
 update_names
 ` + "```"
 
-func cmdHelp(s *dg.Session, i *dg.InteractionCreate) {
+func cmdHelp(s *dg.Session, i *dg.InteractionCreate, _ *serverData) {
 	rsp.InteractionRespond(s, i, helpMessage)
 }
 
-func cmdContinue(s *dg.Session, i *dg.InteractionCreate) {
+func cmdContinue(s *dg.Session, i *dg.InteractionCreate, _ *serverData) {
 	if err := rsp.InteractionContinue(s, i); err == rsp.ErrNoResponseContinuation {
 		rsp.InteractionRespond(s, i, err.Error())
 	}

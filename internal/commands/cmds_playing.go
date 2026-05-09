@@ -11,32 +11,32 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate) {
+func cmdPlay(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options
 	subCommandName := options[0].Name
 
 	switch subCommandName {
 	case "add":
-		addToPlaying(session, interaction)
+		addToPlaying(session, interaction, data)
 	case "remove":
-		removeFromPlaying(session, interaction)
+		removeFromPlaying(session, interaction, data)
 	case "clear":
-		clearPlaying(session, interaction)
+		clearPlaying(session, interaction, data)
 	case "show_all":
-		showPlaying(session, interaction)
+		showPlaying(session, interaction, data)
 	case "guest":
 		options = options[0].Options
 		subCommandName := options[0].Name
 		switch subCommandName {
 		case "add":
-			addGuestsToPlaying(session, interaction)
+			addGuestsToPlaying(session, interaction, data)
 		case "remove":
-			removeGuestsFromPlaying(session, interaction)
+			removeGuestsFromPlaying(session, interaction, data)
 		}
 	}
 }
 
-func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	userIDs := make([]string, len(options))
 	for i := range options {
@@ -44,20 +44,20 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		userIDs[i] = options[i].UserValue(nil).ID
 	}
 
-	names, err := getUserNames(interaction.GuildID, userIDs, session)
+	names, err := getUserNames(data, interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	if err := addPlayingUsers(interaction.GuildID, userIDs...); err != nil {
+	if err := data.AddPlayingUsers(userIDs...); err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	numPlayingStr, err := getNumPlayingString(data)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -76,7 +76,7 @@ func addToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	userIDs := make([]string, len(options))
 	for i := range options {
@@ -84,20 +84,20 @@ func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 		userIDs[i] = options[i].UserValue(nil).ID
 	}
 
-	names, err := getUserNames(interaction.GuildID, userIDs, session)
+	names, err := getUserNames(data, interaction.GuildID, userIDs, session)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	if err := removePlayingUsers(interaction.GuildID, userIDs...); err != nil {
+	if err := data.RemovePlayingUsers(userIDs...); err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
 
-	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	numPlayingStr, err := getNumPlayingString(data)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -116,8 +116,8 @@ func removeFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	if err := clearPlayingUsers(interaction.GuildID); err != nil {
+func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
+	if err := data.ClearPlayingUsers(); err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
@@ -126,8 +126,8 @@ func clearPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespond(session, interaction, "Cleared all users from playing")
 }
 
-func showPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
-	players, err := getPlaying(interaction.GuildID)
+func showPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
+	players, err := data.GetPlaying()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())

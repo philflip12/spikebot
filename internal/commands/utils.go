@@ -7,8 +7,16 @@ import (
 	dg "github.com/bwmarrin/discordgo"
 )
 
-func getUserName(serverID, userID string, session *dg.Session) (string, error) {
-	name, ok, err := loadUserName(serverID, userID)
+func getPersistentServerData(session *dg.Session, interaction *dg.InteractionCreate) (*serverData, error) {
+	data, ok := servers.ReadSafe(interaction.GuildID)
+	if !ok {
+		return nil, fmt.Errorf("serverID not recognized: %s", interaction.GuildID)
+	}
+	return data, nil
+}
+
+func getUserName(serverData *serverData, serverID, userID string, session *dg.Session) (string, error) {
+	name, ok, err := serverData.LoadUserName(userID)
 	if err != nil {
 		return "", err
 	}
@@ -18,13 +26,13 @@ func getUserName(serverID, userID string, session *dg.Session) (string, error) {
 			return "", errors.New("failed to get user info")
 		}
 		name = getNameFromMember(member)
-		saveUserName(serverID, userID, name)
+		serverData.SaveUserName(userID, name)
 	}
 	return name, nil
 }
 
-func getUserNames(serverID string, userIDs []string, session *dg.Session) ([]string, error) {
-	players, err := getPlayers(serverID)
+func getUserNames(serverData *serverData, serverID string, userIDs []string, session *dg.Session) ([]string, error) {
+	players, err := serverData.GetPlayers()
 	if err != nil {
 		return nil, fmt.Errorf("error loading players: %w", err)
 	}
@@ -50,7 +58,7 @@ func getUserNames(serverID string, userIDs []string, session *dg.Session) ([]str
 			}
 			name := getNameFromMember(member)
 			names = append(names, name)
-			saveUserName(serverID, id, name)
+			serverData.SaveUserName(id, name)
 		}
 	default:
 		members, err := session.GuildMembers(serverID, "", 1000)
@@ -62,7 +70,7 @@ func getUserNames(serverID string, userIDs []string, session *dg.Session) ([]str
 			if _, ok := missingIDs[member.User.ID]; ok {
 				name := getNameFromMember(member)
 				names = append(names, name)
-				saveUserName(serverID, member.User.ID, name)
+				serverData.SaveUserName(member.User.ID, name)
 				missingRemaining--
 				if missingRemaining == 0 {
 					break
@@ -84,8 +92,8 @@ func getNameFromMember(member *dg.Member) string {
 	}
 }
 
-func getNumPlayingString(serverID string) (string, error) {
-	numPlaying, err := getPlayingCount(serverID)
+func getNumPlayingString(serverData *serverData) (string, error) {
+	numPlaying, err := serverData.GetPlayingCount()
 	if err != nil {
 		return "", err
 	}

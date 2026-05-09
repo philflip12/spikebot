@@ -11,27 +11,27 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func cmdGuest(session *dg.Session, interaction *dg.InteractionCreate) {
+func cmdGuest(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options
 	subCommandName := options[0].Name
 
 	switch subCommandName {
 	case "create":
-		createGuest(session, interaction)
+		createGuest(session, interaction, data)
 	case "delete":
-		deleteGuest(session, interaction)
+		deleteGuest(session, interaction, data)
 	case "rename":
-		renameGuest(session, interaction)
+		renameGuest(session, interaction, data)
 	case "sign":
-		setGuestSignature(session, interaction, true)
+		setGuestSignature(session, interaction, data, true)
 	case "unsign":
-		setGuestSignature(session, interaction, false)
+		setGuestSignature(session, interaction, data, false)
 	case "show_all":
-		showAllGuests(session, interaction)
+		showAllGuests(session, interaction, data)
 	}
 }
 
-func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
+func createGuest(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	guestName := options[0].StringValue()
 	skill := int(options[1].IntValue())
@@ -40,7 +40,7 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		signed = options[2].BoolValue()
 	}
 
-	players, err := getPlayers(interaction.GuildID)
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -63,7 +63,7 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	}
 	guestID := "g" + role.ID
 
-	if err := saveGuest(interaction.GuildID, guestID, guestName, skill, signed); err != nil {
+	if err := data.SaveGuest(guestID, guestName, skill, signed); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
@@ -74,14 +74,14 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		response = fmt.Sprintf("%s with skill rank %d", response, skill)
 	}
 
-	if err := addPlayingUsers(interaction.GuildID, guestID); err != nil {
+	if err := data.AddPlayingUsers(guestID); err != nil {
 		log.Error(err)
 		errStr := fmt.Sprintf("%s\nEncountered error adding guest %q to playing group: %v", response, guestName, err)
 		rsp.InteractionRespond(session, interaction, errStr)
 		return
 	}
 
-	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	numPlayingStr, err := getNumPlayingString(data)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, "%s\nEncountered error getting playing group size", response)
@@ -91,12 +91,12 @@ func createGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "%s\nAdded guest %q to playing group%s", response, guestName, numPlayingStr)
 }
 
-func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate) {
+func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -107,7 +107,7 @@ func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := deleteUser(interaction.GuildID, guestID); err != nil {
+	if err := data.DeleteUsers(guestID); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
@@ -118,13 +118,13 @@ func deleteGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "Deleted guest %q", player.Name)
 }
 
-func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
+func renameGuest(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 	newName := options[1].StringValue()
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -142,7 +142,7 @@ func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := renamePlayer(interaction.GuildID, guestID, newName); err != nil {
+	if err := data.RenamePlayer(guestID, newName); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
@@ -151,14 +151,14 @@ func renameGuest(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "Renamed guest %q to %q", player.Name, newName)
 }
 
-func setGuestSignature(session *dg.Session, interaction *dg.InteractionCreate, signed bool) {
+func setGuestSignature(session *dg.Session, interaction *dg.InteractionCreate, data *serverData, signed bool) {
 	options := interaction.ApplicationCommandData().Options[0].Options
 	roleIDs := make([]string, len(options))
 	for i := range options {
 		roleIDs[i] = options[i].RoleValue(nil, "").ID
 	}
 
-	players, err := getPlayers(interaction.GuildID)
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -175,7 +175,7 @@ func setGuestSignature(session *dg.Session, interaction *dg.InteractionCreate, s
 		}
 	}
 
-	err = updatePlayerSignatures(interaction.GuildID, guestIDs, signed)
+	err = data.UpdatePlayerSignatures(guestIDs, signed)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -201,14 +201,14 @@ func setGuestSignature(session *dg.Session, interaction *dg.InteractionCreate, s
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleIDs := make([]string, len(options))
 	for i := range options {
 		roleIDs[i] = options[i].RoleValue(nil, "").ID
 	}
 
-	players, err := getPlayers(interaction.GuildID)
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -225,13 +225,13 @@ func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate) 
 		}
 	}
 
-	if err := addPlayingUsers(interaction.GuildID, guestIDs...); err != nil {
+	if err := data.AddPlayingUsers(guestIDs...); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
 	}
 
-	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	numPlayingStr, err := getNumPlayingString(data)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -254,14 +254,14 @@ func addGuestsToPlaying(session *dg.Session, interaction *dg.InteractionCreate) 
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func removeGuestsFromPlaying(session *dg.Session, interaction *dg.InteractionCreate) {
+func removeGuestsFromPlaying(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleIDs := make([]string, len(options))
 	for i := range options {
 		roleIDs[i] = options[i].RoleValue(nil, "").ID
 	}
 
-	players, err := getPlayers(interaction.GuildID)
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -278,13 +278,13 @@ func removeGuestsFromPlaying(session *dg.Session, interaction *dg.InteractionCre
 		}
 	}
 
-	if err := removePlayingUsers(interaction.GuildID, guestIDs...); err != nil {
+	if err := data.RemovePlayingUsers(guestIDs...); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
 	}
 
-	numPlayingStr, err := getNumPlayingString(interaction.GuildID)
+	numPlayingStr, err := getNumPlayingString(data)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
@@ -307,13 +307,13 @@ func removeGuestsFromPlaying(session *dg.Session, interaction *dg.InteractionCre
 	rsp.InteractionRespond(session, interaction, response)
 }
 
-func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
+func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	skill := int(options[1].IntValue())
 	guestID := "g" + roleID
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -324,7 +324,7 @@ func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 		return
 	}
 
-	if err := setPlayerSkill(interaction.GuildID, guestID, skill); err != nil {
+	if err := data.SetPlayerSkill(guestID, skill); err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
 		return
@@ -333,13 +333,13 @@ func setGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "Set %q skill rank to %d", player.Name, skill)
 }
 
-func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
+func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	difference := int(options[1].IntValue())
 	guestID := "g" + roleID
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -350,7 +350,7 @@ func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 		return
 	}
 
-	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, guestID, difference)
+	prevSkill, newSkill, err := data.ModifyPlayerSkill(guestID, difference)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -360,13 +360,13 @@ func increaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 	rsp.InteractionRespondf(session, interaction, "Increased guest %q skill rank from %d to %d", player.Name, prevSkill, newSkill)
 }
 
-func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
+func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	difference := int(options[1].IntValue())
 	guestID := "g" + roleID
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -377,7 +377,7 @@ func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 		return
 	}
 
-	prevSkill, newSkill, err := modifyPlayerSkill(interaction.GuildID, guestID, -difference)
+	prevSkill, newSkill, err := data.ModifyPlayerSkill(guestID, -difference)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -387,12 +387,12 @@ func decreaseGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) 
 	rsp.InteractionRespondf(session, interaction, "Decreased guest %q skill rank from %d to %d", player.Name, prevSkill, newSkill)
 }
 
-func showGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
+func showGuestSkill(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
 	options := interaction.ApplicationCommandData().Options[0].Options[0].Options
 	roleID := options[0].RoleValue(nil, "").ID
 	guestID := "g" + roleID
 
-	player, ok, err := getPlayer(interaction.GuildID, guestID)
+	player, ok, err := data.GetPlayer(guestID)
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespondf(session, interaction, err.Error())
@@ -406,8 +406,8 @@ func showGuestSkill(session *dg.Session, interaction *dg.InteractionCreate) {
 	rsp.InteractionRespondf(session, interaction, "Guest %q has a skill rank of %d", player.Name, player.Skill)
 }
 
-func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate) {
-	players, err := getPlayers(interaction.GuildID)
+func showAllGuests(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
+	players, err := data.GetPlayers()
 	if err != nil {
 		log.Error(err)
 		rsp.InteractionRespond(session, interaction, err.Error())
