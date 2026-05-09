@@ -57,6 +57,8 @@ func OnInteractionCreate(s *dg.Session, i *dg.InteractionCreate) {
 		cmdSign(s, i, d, true)
 	case "unsign":
 		cmdSign(s, i, d, false)
+	case "require_signatures":
+		cmdRequireSignatures(s, i, d)
 	case "teams":
 		cmdTeams(s, i, d)
 	case "redo":
@@ -341,6 +343,15 @@ var CommandList = []*dg.ApplicationCommand{{
 	Name:        "unsign",
 	Description: "Mark the player as not having signed",
 	Options:     multiMemberSelectOptions(24),
+}, {
+	Name:        "require_signatures",
+	Description: "Set whether or not signatures are required for all players",
+	Options: []*dg.ApplicationCommandOption{{
+		Name:        "require",
+		Description: "Whether or not signatures are required for playing",
+		Type:        dg.ApplicationCommandOptionBoolean,
+		Required:    true,
+	}},
 }}
 
 const helpMessage = "Spike Command Options:\n" +
@@ -374,6 +385,7 @@ guest
 	show_all
 sign
 unsign
+require_signatures
 teams
 update_names
 ` + "```"

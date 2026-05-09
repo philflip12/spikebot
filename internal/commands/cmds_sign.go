@@ -44,3 +44,20 @@ func cmdSign(session *dg.Session, interaction *dg.InteractionCreate, data *serve
 	}
 	rsp.InteractionRespond(session, interaction, response)
 }
+
+func cmdRequireSignatures(session *dg.Session, interaction *dg.InteractionCreate, data *serverData) {
+	options := interaction.ApplicationCommandData().Options
+	isRequired := options[0].BoolValue()
+
+	if err := data.SetSignatureRequirement(isRequired); err != nil {
+		log.Error(err)
+		rsp.InteractionRespond(session, interaction, err.Error())
+		return
+	}
+
+	response := "Signatures no longer required for each player"
+	if isRequired {
+		response = "Signatures now required for each player"
+	}
+	rsp.InteractionRespond(session, interaction, response)
+}

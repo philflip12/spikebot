@@ -49,7 +49,7 @@ func cmdTeamsSubCall(session *dg.Session, interaction *dg.InteractionCreate, dat
 		return
 	}
 
-	if err := validateTeams(players, numTeams); err != nil {
+	if err := validateTeams(data, players, numTeams); err != nil {
 		rsp.InteractionRespond(session, interaction, err.Error())
 		return
 	}
@@ -226,15 +226,20 @@ func (t *teamsOptions) getOptions() (numTeams int, maxSkillGap float64, err erro
 	return t.numTeams, t.maxSkillGap, nil
 }
 
-// Ensure that all playing users have a skill rank set and have signed
-func validateTeams(players []Player, numTeams int) error {
+// Ensure that all playing users have a skill rank set and have signed if required
+func validateTeams(serverData *serverData, players []Player, numTeams int) error {
+	settings, err := serverData.GetSettings()
+	if err != nil {
+		return err
+	}
+
 	noSkill := []string{}
 	noSign := []string{}
 	for _, player := range players {
 		if player.Skill == -1 {
 			noSkill = append(noSkill, player.Name)
 		}
-		if !player.Signed {
+		if settings.RequireSignatures && !player.Signed {
 			noSign = append(noSign, player.Name)
 		}
 	}

@@ -16,6 +16,7 @@ import (
 
 const (
 	persistentDataDirectory = "persistentData"
+	settingsFileName        = "settings"
 	playerDataFileName      = "playerData"
 	playingListFileName     = "playingList"
 )
@@ -26,6 +27,12 @@ func newServerData(serverID string) *serverData {
 	filepath.Join(persistentDataDirectory, serverID)
 	serverDirectory := fmt.Sprintf("%s/%s", persistentDataDirectory, serverID)
 	return &serverData{
+		Settings: persistentObject[*Settings]{
+			filePath:   serverDirectory,
+			fileName:   settingsFileName,
+			makeNew:    func() *Settings { return &Settings{} },
+			checkValid: func(m *Settings) bool { return m != nil },
+		},
 		Players: persistentObject[map[string]Player]{
 			filePath:   serverDirectory,
 			fileName:   playerDataFileName,
@@ -42,8 +49,13 @@ func newServerData(serverID string) *serverData {
 }
 
 type serverData struct {
-	Players persistentObject[map[string]Player]
-	Playing persistentObject[map[string]struct{}]
+	Settings persistentObject[*Settings]
+	Players  persistentObject[map[string]Player]
+	Playing  persistentObject[map[string]struct{}]
+}
+
+type Settings struct {
+	RequireSignatures bool `json:"requireSignatures"`
 }
 
 // initializes the players and playing persistentObject variables for each server being serviced
@@ -141,6 +153,23 @@ func (p *persistentObject[T]) WithLock(do func(object T) (dirty bool)) error {
 		return p.Save()
 	}
 	return nil
+}
+
+func (d *serverData) SetSignatureRequirement(isRequired bool) error {
+	return d.Settings.WithLock(func(s *Settings) (dirty bool) {
+		wasRequired := s.RequireSignatures
+		s.RequireSignatures = isRequired
+		return wasRequired != isRequired
+	})
+}
+
+func (d *serverData) GetSettings() (Settings, error) {
+	var settings Settings
+	err := d.Settings.WithLock(func(s *Settings) (dirty bool) {
+		settings = *s
+		return false
+	})
+	return settings, err
 }
 
 type Player struct {
